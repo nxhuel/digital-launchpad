@@ -21,8 +21,14 @@ export function Footer() {
         <div>
           <h4 className="font-semibold mb-4 text-sm">Contacto</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> hola@lanzar.studio</li>
-            <li className="flex items-center gap-2"><MessageCircle className="h-4 w-4" /> WhatsApp +54 11 0000 0000</li>
+            <li className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span>hola@lanzar.studio</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              <span>WhatsApp +54 11 0000 0000</span>
+            </li>
           </ul>
         </div>
 

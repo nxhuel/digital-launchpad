@@ -9,38 +9,64 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TarjetasRouteImport } from './routes/tarjetas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TarjetasCategoriaRouteImport } from './routes/tarjetas.$categoria'
 
+const TarjetasRoute = TarjetasRouteImport.update({
+  id: '/tarjetas',
+  path: '/tarjetas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TarjetasCategoriaRoute = TarjetasCategoriaRouteImport.update({
+  id: '/$categoria',
+  path: '/$categoria',
+  getParentRoute: () => TarjetasRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/tarjetas': typeof TarjetasRouteWithChildren
+  '/tarjetas/$categoria': typeof TarjetasCategoriaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/tarjetas': typeof TarjetasRouteWithChildren
+  '/tarjetas/$categoria': typeof TarjetasCategoriaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/tarjetas': typeof TarjetasRouteWithChildren
+  '/tarjetas/$categoria': typeof TarjetasCategoriaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/tarjetas' | '/tarjetas/$categoria'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/tarjetas' | '/tarjetas/$categoria'
+  id: '__root__' | '/' | '/tarjetas' | '/tarjetas/$categoria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TarjetasRoute: typeof TarjetasRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tarjetas': {
+      id: '/tarjetas'
+      path: '/tarjetas'
+      fullPath: '/tarjetas'
+      preLoaderRoute: typeof TarjetasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +74,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tarjetas/$categoria': {
+      id: '/tarjetas/$categoria'
+      path: '/$categoria'
+      fullPath: '/tarjetas/$categoria'
+      preLoaderRoute: typeof TarjetasCategoriaRouteImport
+      parentRoute: typeof TarjetasRoute
+    }
   }
 }
 
+interface TarjetasRouteChildren {
+  TarjetasCategoriaRoute: typeof TarjetasCategoriaRoute
+}
+
+const TarjetasRouteChildren: TarjetasRouteChildren = {
+  TarjetasCategoriaRoute: TarjetasCategoriaRoute,
+}
+
+const TarjetasRouteWithChildren = TarjetasRoute._addFileChildren(
+  TarjetasRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TarjetasRoute: TarjetasRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
