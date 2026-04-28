@@ -2,8 +2,6 @@ export type CardCategory = {
   slug: string;
   name: string;
   description: string;
-  emoji: string;
-  gradient: string;
 };
 
 export const cardCategories: CardCategory[] = [
@@ -11,81 +9,275 @@ export const cardCategories: CardCategory[] = [
     slug: "casamientos",
     name: "Casamientos",
     description: "Invitaciones elegantes para el día más importante.",
-    emoji: "💍",
-    gradient: "from-pink-400/40 to-rose-600/40",
   },
   {
-    slug: "cumpleanos",
-    name: "Cumpleaños",
-    description: "Diseños divertidos para celebrar a lo grande.",
-    emoji: "🎂",
-    gradient: "from-amber-400/40 to-orange-600/40",
+    slug: "xv",
+    name: "XV / 15 años",
+    description: "Diseños modernos y soñados para los 15.",
   },
   {
-    slug: "eventos",
-    name: "Eventos",
-    description: "Para fiestas, baby showers, bautismos y más.",
-    emoji: "🎉",
-    gradient: "from-violet-400/40 to-fuchsia-600/40",
+    slug: "peques",
+    name: "Peques / Infantiles",
+    description: "Cumples, baby showers y bautismos con onda.",
   },
   {
-    slug: "negocios",
-    name: "Negocios",
-    description: "Inauguraciones, lanzamientos y eventos corporativos.",
-    emoji: "💼",
-    gradient: "from-blue-400/40 to-cyan-600/40",
-  },
-  {
-    slug: "otros",
-    name: "Otros",
-    description: "Diseños únicos para cualquier ocasión especial.",
-    emoji: "✨",
-    gradient: "from-emerald-400/40 to-teal-600/40",
+    slug: "empresariales",
+    name: "Empresariales",
+    description: "Lanzamientos, inauguraciones y eventos corporativos.",
   },
 ];
+
+export type CardTag = "Popular" | "Nuevo" | "Elegante" | "Premium" | "Minimal";
 
 export type CardDesign = {
   id: string;
   name: string;
+  category: string; // slug
   style: string;
-  gradient: string;
-  emoji: string;
+  tag?: CardTag;
+  // Visual
+  accent: string; // tailwind gradient classes inside the phone screen
+  ring: string;
+  font: string; // font class for the title
+  badge: string;
+  // Invite content
+  subtitle: string;
+  date: string;
+  location: string;
+  cta: string;
 };
 
-export const designsByCategory: Record<string, CardDesign[]> = {
-  casamientos: [
-    { id: "c1", name: "Eterno", style: "Elegante minimalista", gradient: "from-rose-200/30 to-pink-500/40", emoji: "💍" },
-    { id: "c2", name: "Romántico", style: "Floral acuarela", gradient: "from-pink-300/30 to-rose-600/40", emoji: "🌸" },
-    { id: "c3", name: "Dorado", style: "Lujo dorado", gradient: "from-amber-200/30 to-yellow-600/40", emoji: "✨" },
-    { id: "c4", name: "Boho", style: "Natural rústico", gradient: "from-stone-300/30 to-amber-700/40", emoji: "🌿" },
-    { id: "c5", name: "Moderno", style: "Tipográfico audaz", gradient: "from-slate-300/30 to-zinc-700/40", emoji: "🤍" },
-    { id: "c6", name: "Playa", style: "Tropical relajado", gradient: "from-sky-300/30 to-cyan-600/40", emoji: "🌊" },
-  ],
-  cumpleanos: [
-    { id: "b1", name: "Confeti", style: "Festivo colorido", gradient: "from-fuchsia-300/30 to-pink-600/40", emoji: "🎉" },
-    { id: "b2", name: "Globos", style: "Divertido infantil", gradient: "from-sky-300/30 to-blue-600/40", emoji: "🎈" },
-    { id: "b3", name: "Neón", style: "Fiesta nocturna", gradient: "from-violet-400/30 to-fuchsia-700/40", emoji: "🪩" },
-    { id: "b4", name: "Princesa", style: "Mágico fantasía", gradient: "from-pink-300/30 to-purple-600/40", emoji: "👑" },
-    { id: "b5", name: "Dorado", style: "Elegante 30/40/50", gradient: "from-amber-200/30 to-yellow-700/40", emoji: "🥂" },
-    { id: "b6", name: "Retro", style: "Vintage años 80", gradient: "from-orange-300/30 to-red-600/40", emoji: "🎂" },
-  ],
-  eventos: [
-    { id: "e1", name: "Baby Shower", style: "Suave pastel", gradient: "from-sky-200/30 to-pink-300/40", emoji: "👶" },
-    { id: "e2", name: "Bautismo", style: "Espiritual celeste", gradient: "from-blue-200/30 to-indigo-500/40", emoji: "🕊️" },
-    { id: "e3", name: "Comunión", style: "Clásico blanco", gradient: "from-slate-100/30 to-blue-400/40", emoji: "🤍" },
-    { id: "e4", name: "Egresados", style: "Joven dinámico", gradient: "from-violet-300/30 to-blue-700/40", emoji: "🎓" },
-    { id: "e5", name: "Aniversario", style: "Romántico íntimo", gradient: "from-rose-300/30 to-red-600/40", emoji: "💖" },
-  ],
-  negocios: [
-    { id: "n1", name: "Lanzamiento", style: "Corporativo moderno", gradient: "from-blue-400/30 to-indigo-700/40", emoji: "🚀" },
-    { id: "n2", name: "Inauguración", style: "Premium dorado", gradient: "from-amber-300/30 to-yellow-700/40", emoji: "🥂" },
-    { id: "n3", name: "Conferencia", style: "Profesional serio", gradient: "from-slate-400/30 to-zinc-800/40", emoji: "🎤" },
-    { id: "n4", name: "Networking", style: "Dinámico ejecutivo", gradient: "from-cyan-300/30 to-blue-700/40", emoji: "🤝" },
-  ],
-  otros: [
-    { id: "o1", name: "Personalizado", style: "Diseño único a medida", gradient: "from-emerald-300/30 to-teal-700/40", emoji: "✨" },
-    { id: "o2", name: "Despedida", style: "Emotivo cálido", gradient: "from-orange-300/30 to-red-600/40", emoji: "👋" },
-    { id: "o3", name: "Halloween", style: "Misterioso oscuro", gradient: "from-orange-400/30 to-purple-900/40", emoji: "🎃" },
-    { id: "o4", name: "Navidad", style: "Festivo tradicional", gradient: "from-red-400/30 to-green-700/40", emoji: "🎄" },
-  ],
-};
+export const cardDesigns: CardDesign[] = [
+  // Casamientos
+  {
+    id: "w-elegance",
+    name: "Elegance Wedding",
+    category: "casamientos",
+    style: "Elegante minimalista",
+    tag: "Popular",
+    accent: "from-amber-200/25 via-rose-200/15 to-stone-300/25",
+    ring: "ring-amber-200/25",
+    font: "font-serif",
+    badge: "Save the date",
+    subtitle: "se casan",
+    date: "Sábado 12 · Octubre 2026",
+    location: "Estancia La Reserva · 19:30 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "w-romantico",
+    name: "Romántico Floral",
+    category: "casamientos",
+    style: "Floral acuarela",
+    tag: "Elegante",
+    accent: "from-rose-300/25 via-pink-300/20 to-rose-500/25",
+    ring: "ring-rose-200/25",
+    font: "font-serif italic",
+    badge: "Nos casamos",
+    subtitle: "te invitan a su boda",
+    date: "Domingo 5 · Mayo 2026",
+    location: "Jardín Los Olivos · 18:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "w-dorado",
+    name: "Golden Luxe",
+    category: "casamientos",
+    style: "Lujo dorado",
+    tag: "Premium",
+    accent: "from-amber-300/25 via-yellow-500/15 to-amber-700/25",
+    ring: "ring-amber-300/30",
+    font: "font-serif",
+    badge: "Wedding day",
+    subtitle: "celebran su amor",
+    date: "Sábado 22 · Noviembre",
+    location: "Hotel Palacio Real · 20:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "w-moderno",
+    name: "Modern Minimal",
+    category: "casamientos",
+    style: "Tipográfico audaz",
+    tag: "Minimal",
+    accent: "from-zinc-200/15 via-stone-300/10 to-zinc-500/20",
+    ring: "ring-white/15",
+    font: "font-display tracking-tight",
+    badge: "12.10.26",
+    subtitle: "wedding",
+    date: "Sábado 12 · Octubre",
+    location: "Casa de Campo · 19:00 hs",
+    cta: "Confirmar asistencia",
+  },
+
+  // XV / 15 años
+  {
+    id: "xv-valentina",
+    name: "Valentina Glow",
+    category: "xv",
+    style: "Brillo y glamour",
+    tag: "Popular",
+    accent: "from-fuchsia-500/30 via-pink-500/20 to-rose-500/30",
+    ring: "ring-pink-300/25",
+    font: "font-serif italic",
+    badge: "Mis 15",
+    subtitle: "cumple 15",
+    date: "Sábado 14 · Septiembre",
+    location: "Salón Aurora · 21:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "xv-rosegold",
+    name: "Rose Gold",
+    category: "xv",
+    style: "Romántico rosé",
+    tag: "Elegante",
+    accent: "from-rose-300/25 via-pink-300/15 to-amber-200/25",
+    ring: "ring-rose-200/25",
+    font: "font-serif",
+    badge: "XV años",
+    subtitle: "celebra sus 15",
+    date: "Viernes 7 · Junio",
+    location: "Quinta El Rosedal · 22:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "xv-neon",
+    name: "Neón Party",
+    category: "xv",
+    style: "Fiesta nocturna",
+    tag: "Nuevo",
+    accent: "from-violet-500/30 via-fuchsia-500/20 to-cyan-400/25",
+    ring: "ring-fuchsia-400/30",
+    font: "font-display tracking-tight",
+    badge: "XV · Party",
+    subtitle: "te invita a sus 15",
+    date: "Sábado 28 · Marzo",
+    location: "Club Neón · 23:00 hs",
+    cta: "Sumarme a la fiesta",
+  },
+  {
+    id: "xv-celestial",
+    name: "Celestial",
+    category: "xv",
+    style: "Etéreo soñado",
+    tag: "Premium",
+    accent: "from-indigo-400/25 via-violet-400/20 to-pink-400/25",
+    ring: "ring-violet-300/25",
+    font: "font-serif italic",
+    badge: "Mis XV",
+    subtitle: "cumple 15",
+    date: "Sábado 5 · Octubre",
+    location: "Salón Estelar · 21:30 hs",
+    cta: "Confirmar asistencia",
+  },
+
+  // Peques / Infantiles
+  {
+    id: "k-mateo",
+    name: "Mateo Bautismo",
+    category: "peques",
+    style: "Suave celeste",
+    tag: "Popular",
+    accent: "from-sky-300/25 via-indigo-300/15 to-blue-400/25",
+    ring: "ring-sky-200/25",
+    font: "font-serif",
+    badge: "Te esperamos",
+    subtitle: "Bautismo",
+    date: "Domingo 03 · Agosto",
+    location: "Parroquia San Benito · 11:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "k-luna",
+    name: "Luna Baby Shower",
+    category: "peques",
+    style: "Pastel acuarela",
+    tag: "Elegante",
+    accent: "from-pink-200/25 via-rose-200/15 to-amber-200/25",
+    ring: "ring-pink-200/25",
+    font: "font-serif italic",
+    badge: "Baby Shower",
+    subtitle: "esperamos a Luna",
+    date: "Sábado 19 · Abril",
+    location: "Casa de la familia · 16:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "k-tomas",
+    name: "Tomás Aventura",
+    category: "peques",
+    style: "Divertido infantil",
+    tag: "Nuevo",
+    accent: "from-emerald-400/25 via-cyan-400/15 to-blue-500/25",
+    ring: "ring-cyan-300/25",
+    font: "font-display tracking-tight",
+    badge: "Cumple 5",
+    subtitle: "festeja",
+    date: "Domingo 11 · Mayo",
+    location: "Parque Aventura · 15:30 hs",
+    cta: "Quiero ir",
+  },
+  {
+    id: "k-sofi",
+    name: "Sofi Princesa",
+    category: "peques",
+    style: "Mágico fantasía",
+    tag: "Popular",
+    accent: "from-pink-400/25 via-purple-400/15 to-violet-500/25",
+    ring: "ring-purple-300/25",
+    font: "font-serif italic",
+    badge: "Mis 6",
+    subtitle: "cumple años",
+    date: "Sábado 8 · Marzo",
+    location: "Salón Encantado · 17:00 hs",
+    cta: "Confirmar asistencia",
+  },
+
+  // Empresariales
+  {
+    id: "e-launch",
+    name: "Launch Pro",
+    category: "empresariales",
+    style: "Corporativo moderno",
+    tag: "Nuevo",
+    accent: "from-blue-500/25 via-indigo-500/15 to-violet-600/25",
+    ring: "ring-blue-400/25",
+    font: "font-display tracking-tight",
+    badge: "Launch event",
+    subtitle: "presenta",
+    date: "Jueves 18 · Septiembre",
+    location: "Centro de Convenciones · 19:00 hs",
+    cta: "Reservar mi lugar",
+  },
+  {
+    id: "e-opening",
+    name: "Grand Opening",
+    category: "empresariales",
+    style: "Premium dorado",
+    tag: "Premium",
+    accent: "from-amber-300/25 via-yellow-500/15 to-orange-600/25",
+    ring: "ring-amber-300/30",
+    font: "font-serif",
+    badge: "Inauguración",
+    subtitle: "te invita",
+    date: "Viernes 22 · Agosto",
+    location: "Av. Libertador 1234 · 20:00 hs",
+    cta: "Confirmar asistencia",
+  },
+  {
+    id: "e-summit",
+    name: "Summit Minimal",
+    category: "empresariales",
+    style: "Profesional minimal",
+    tag: "Minimal",
+    accent: "from-zinc-300/15 via-slate-400/10 to-zinc-700/25",
+    ring: "ring-white/15",
+    font: "font-display tracking-tight",
+    badge: "Summit 2026",
+    subtitle: "conferencia anual",
+    date: "Miércoles 7 · Octubre",
+    location: "Auditorio Central · 09:00 hs",
+    cta: "Reservar mi lugar",
+  },
+];
