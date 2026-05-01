@@ -45,6 +45,10 @@ export type CardDesign = {
   date: string;
   location: string;
   cta: string;
+  // Optional rich invite content
+  eventISO?: string; // for live countdown
+  song?: { title: string; artist: string };
+  mapsUrl?: string;
 };
 
 export const cardDesigns: CardDesign[] = [
