@@ -4,24 +4,22 @@ import { Header } from "@/components/site/Header";
 import { Hero } from "@/components/site/Hero";
 import { Services } from "@/components/site/Services";
 import { HowItWorks } from "@/components/site/HowItWorks";
-import { Benefits } from "@/components/site/Benefits";
+import { About } from "@/components/site/About";
 import { Cases } from "@/components/site/Cases";
 import { Pricing } from "@/components/site/Pricing";
-import { DigitalCards } from "@/components/site/DigitalCards";
-import { Testimonials } from "@/components/site/Testimonials";
 import { CTA } from "@/components/site/CTA";
 import { Footer } from "@/components/site/Footer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Lanzar.studio — Llevá tu negocio al mundo digital" },
+      { title: "NoduStudio — Agencia tecnológica para emprendedores" },
       {
         name: "description",
         content:
-          "Agencia tecnológica para emprendedores. Webs, sistemas, automatizaciones con IA y tarjetas digitales para todo tipo de eventos.",
+          "Webs, sistemas, automatizaciones con IA y tarjetas digitales. Llevá tu idea al mundo digital sin saber de tecnología.",
       },
-      { property: "og:title", content: "Lanzar.studio — Tu negocio online en días" },
+      { property: "og:title", content: "NoduStudio — Tu negocio online en días" },
       {
         property: "og:description",
         content:
@@ -40,15 +38,13 @@ function Index() {
         <Hero />
         <Services />
         <HowItWorks />
-        <Benefits />
+        <About />
         <Cases />
         <Pricing />
-        <DigitalCards />
-        <Testimonials />
         <CTA />
       </main>
       <Footer />
-      <Toaster theme="dark" position="bottom-right" />
+      <Toaster position="bottom-right" />
     </div>
   );
 }
