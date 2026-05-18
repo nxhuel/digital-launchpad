@@ -33,8 +33,13 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+<<<<<<< HEAD
   --font-display: "DM Serif Display", serif;
   --font-sans: "Red Hat Display", system-ui, sans-serif;
+=======
+  --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+>>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
 
   --animate-fade-in: fade-in 0.6s ease-out forwards;
   --animate-fade-up: fade-up 0.7s ease-out forwards;
@@ -76,6 +81,7 @@
 
 /* ─── Light-mode design system (Clik Brand) ────────────────────────────────── */
 :root {
+<<<<<<< HEAD
   --radius: 1rem;
 
   /* New palette - Light mode */
@@ -131,6 +137,48 @@
   --muted-foreground:  #a1a1aa;
   --border:            #27272a;
 }
+=======
+  --radius: 0.875rem;
+
+  /* NoduStudio — light, warm beige + brown */
+  --background: #FDFBF7;
+  --foreground: #7C4E36;
+
+  --card: #FFFCF8;
+  --card-foreground: #7C4E36;
+
+  --popover: #FFFCF8;
+  --popover-foreground: #7C4E36;
+
+  --primary: #B8956A;
+  --primary-foreground: #FFFCF8;
+  --primary-glow: #D4B896;
+
+  --secondary: #F4ECE0;
+  --secondary-foreground: #7C4E36;
+
+  --muted: #F4ECE0;
+  --muted-foreground: #ABA39C;
+
+  --accent: #B8956A;
+  --accent-foreground: #FFFCF8;
+
+  --destructive: #C0593E;
+  --destructive-foreground: #FFFCF8;
+
+  --border: #EADFCF;
+  --input: #EADFCF;
+  --ring: #B8956A;
+
+  --gradient-primary: linear-gradient(135deg, #B8956A 0%, #D4B896 100%);
+  --gradient-hero: radial-gradient(ellipse at top, rgba(184,149,106,0.18), transparent 60%);
+  --gradient-card: linear-gradient(180deg, #FFFCF8, #FAF3E8);
+  --shadow-glow: 0 12px 40px -12px rgba(184,149,106,0.45);
+  --shadow-elegant: 0 24px 60px -24px rgba(124,78,54,0.18);
+}
+
+.dark { color-scheme: light; }
+>>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
 
 /* ─── Base layer ──────────────────────────────────────────────────────────── */
 @layer base {
@@ -150,6 +198,7 @@
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    font-weight: 500;
   }
 }
 
@@ -172,6 +221,7 @@
 
   /* Light glass — frosted panel */
   .glass {
+<<<<<<< HEAD
     background: color-mix(in oklch, var(--color-card) 72%, transparent);
     backdrop-filter: blur(16px);
     border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
@@ -211,5 +261,10 @@
     opacity: 0.05;
     pointer-events: none;
     mix-blend-mode: overlay;
+=======
+    background: rgba(255, 252, 248, 0.7);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(184, 149, 106, 0.18);
+>>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
   }
 }
