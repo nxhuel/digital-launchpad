@@ -1,4 +1,4 @@
-import { UtensilsCrossed, Shirt, Briefcase, TrendingUp } from "lucide-react";
+import { UtensilsCrossed, Shirt, Briefcase } from "lucide-react";
 
 const cases = [
   {
@@ -6,21 +6,21 @@ const cases = [
     tag: "Gastronomía",
     title: "La Trattoria",
     desc: "Restaurante familiar que ahora vende online y recibe reservas automáticas.",
-    metric: "+180% pedidos",
+    url: "https://ejemplo.com",
   },
   {
     icon: Shirt,
     tag: "Indumentaria",
     title: "Norte Clothing",
     desc: "Marca de ropa que abrió su tienda digital y vende en todo el país.",
-    metric: "+340% ventas",
+    url: "https://ejemplo.com",
   },
   {
     icon: Briefcase,
     tag: "Servicios",
     title: "Estudio Vega",
     desc: "Consultora con landing profesional que duplicó sus consultas mensuales.",
-    metric: "x2 consultas",
+    url: "https://ejemplo.com",
   },
 ];
 
@@ -47,10 +47,14 @@ export function Cases() {
               </div>
               <h3 className="text-xl font-semibold mb-2">{c.title}</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">{c.desc}</p>
-              <div className="flex items-center gap-2 text-sm font-semibold text-gradient">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                {c.metric}
-              </div>
+              <a
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm font-semibold text-gradient hover:underline"
+              >
+                Ver sitio web →
+              </a>
             </article>
           ))}
         </div>

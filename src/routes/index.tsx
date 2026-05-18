@@ -4,28 +4,28 @@ import { Header } from "@/components/site/Header";
 import { Hero } from "@/components/site/Hero";
 import { Services } from "@/components/site/Services";
 import { HowItWorks } from "@/components/site/HowItWorks";
-import { Benefits } from "@/components/site/Benefits";
-import { Cases } from "@/components/site/Cases";
 import { Pricing } from "@/components/site/Pricing";
-import { DigitalCards } from "@/components/site/DigitalCards";
-import { Testimonials } from "@/components/site/Testimonials";
-import { CTA } from "@/components/site/CTA";
+import { CTA } from "@/components/site/CTA.tsx";
 import { Footer } from "@/components/site/Footer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Lanzar.studio — Llevá tu negocio al mundo digital" },
+      { title: "Clik — Agencia Digital" },
       {
         name: "description",
-        content:
-          "Agencia tecnológica para emprendedores. Webs, sistemas, automatizaciones con IA y tarjetas digitales para todo tipo de eventos.",
+        content: "Agencia tecnologica para emprendedores. Paginas web, sistemas, automatizaciones con IA y tarjetas digitales.",
       },
-      { property: "og:title", content: "Lanzar.studio — Tu negocio online en días" },
+      { property: "og:title", content: "Clik — Tu negocio online en dias" },
       {
         property: "og:description",
-        content:
-          "Webs, sistemas, automatizaciones con IA y tarjetas digitales. Lanzá tu negocio sin saber de tecnología.",
+        content: "Paginas web, sistemas, automatizaciones con IA y tarjetas digitales. Lanzá tu negocio sin saber de tecnologia.",
+      },
+    ],
+    links: [
+      {
+        rel: "icon",
+        href: "/logo.png",
       },
     ],
   }),
@@ -34,21 +34,17 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
       <main>
         <Hero />
         <Services />
         <HowItWorks />
-        <Benefits />
-        <Cases />
         <Pricing />
-        <DigitalCards />
-        <Testimonials />
         <CTA />
       </main>
       <Footer />
-      <Toaster theme="dark" position="bottom-right" />
+      <Toaster position="bottom-right" />
     </div>
   );
 }

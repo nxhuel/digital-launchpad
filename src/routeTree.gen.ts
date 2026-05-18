@@ -10,11 +10,35 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TarjetasRouteImport } from './routes/tarjetas'
+import { Route as QuienesSomosRouteImport } from './routes/quienes-somos'
+import { Route as PorQueElegirnosRouteImport } from './routes/por-que-elegirnos'
+import { Route as NuestrosTrabajosRouteImport } from './routes/nuestros-trabajos'
+import { Route as MasDeNosotrosRouteImport } from './routes/mas-de-nosotros'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TarjetasRoute = TarjetasRouteImport.update({
   id: '/tarjetas',
   path: '/tarjetas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuienesSomosRoute = QuienesSomosRouteImport.update({
+  id: '/quienes-somos',
+  path: '/quienes-somos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PorQueElegirnosRoute = PorQueElegirnosRouteImport.update({
+  id: '/por-que-elegirnos',
+  path: '/por-que-elegirnos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NuestrosTrabajosRoute = NuestrosTrabajosRouteImport.update({
+  id: '/nuestros-trabajos',
+  path: '/nuestros-trabajos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasDeNosotrosRoute = MasDeNosotrosRouteImport.update({
+  id: '/mas-de-nosotros',
+  path: '/mas-de-nosotros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,27 +49,62 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/mas-de-nosotros': typeof MasDeNosotrosRoute
+  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
+  '/por-que-elegirnos': typeof PorQueElegirnosRoute
+  '/quienes-somos': typeof QuienesSomosRoute
   '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/mas-de-nosotros': typeof MasDeNosotrosRoute
+  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
+  '/por-que-elegirnos': typeof PorQueElegirnosRoute
+  '/quienes-somos': typeof QuienesSomosRoute
   '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/mas-de-nosotros': typeof MasDeNosotrosRoute
+  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
+  '/por-que-elegirnos': typeof PorQueElegirnosRoute
+  '/quienes-somos': typeof QuienesSomosRoute
   '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tarjetas'
+  fullPaths:
+    | '/'
+    | '/mas-de-nosotros'
+    | '/nuestros-trabajos'
+    | '/por-que-elegirnos'
+    | '/quienes-somos'
+    | '/tarjetas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/tarjetas'
-  id: '__root__' | '/' | '/tarjetas'
+  to:
+    | '/'
+    | '/mas-de-nosotros'
+    | '/nuestros-trabajos'
+    | '/por-que-elegirnos'
+    | '/quienes-somos'
+    | '/tarjetas'
+  id:
+    | '__root__'
+    | '/'
+    | '/mas-de-nosotros'
+    | '/nuestros-trabajos'
+    | '/por-que-elegirnos'
+    | '/quienes-somos'
+    | '/tarjetas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MasDeNosotrosRoute: typeof MasDeNosotrosRoute
+  NuestrosTrabajosRoute: typeof NuestrosTrabajosRoute
+  PorQueElegirnosRoute: typeof PorQueElegirnosRoute
+  QuienesSomosRoute: typeof QuienesSomosRoute
   TarjetasRoute: typeof TarjetasRoute
 }
 
@@ -56,6 +115,34 @@ declare module '@tanstack/react-router' {
       path: '/tarjetas'
       fullPath: '/tarjetas'
       preLoaderRoute: typeof TarjetasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quienes-somos': {
+      id: '/quienes-somos'
+      path: '/quienes-somos'
+      fullPath: '/quienes-somos'
+      preLoaderRoute: typeof QuienesSomosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/por-que-elegirnos': {
+      id: '/por-que-elegirnos'
+      path: '/por-que-elegirnos'
+      fullPath: '/por-que-elegirnos'
+      preLoaderRoute: typeof PorQueElegirnosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nuestros-trabajos': {
+      id: '/nuestros-trabajos'
+      path: '/nuestros-trabajos'
+      fullPath: '/nuestros-trabajos'
+      preLoaderRoute: typeof NuestrosTrabajosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mas-de-nosotros': {
+      id: '/mas-de-nosotros'
+      path: '/mas-de-nosotros'
+      fullPath: '/mas-de-nosotros'
+      preLoaderRoute: typeof MasDeNosotrosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,17 +157,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MasDeNosotrosRoute: MasDeNosotrosRoute,
+  NuestrosTrabajosRoute: NuestrosTrabajosRoute,
+  PorQueElegirnosRoute: PorQueElegirnosRoute,
+  QuienesSomosRoute: QuienesSomosRoute,
   TarjetasRoute: TarjetasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
