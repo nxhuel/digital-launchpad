@@ -11,7 +11,8 @@ export function Footer() {
             </span>
           </div>
           <p className="text-base text-slate-500 max-w-sm leading-relaxed">
-            Ayudamos a emprendedores a llevar su negocio al mundo digital de forma simple, rápida y profesional. No somos solo desarrolladores, somos tus socios.          </p>
+            Ayudamos a emprendedores a llevar su negocio al mundo digital de forma simple, rápida y profesional. No somos solo desarrolladores, somos tus socios.
+          </p>
         </div>
 
         <div>
@@ -21,13 +22,14 @@ export function Footer() {
               <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-primary">
                 <Mail className="h-4 w-4 shrink-0" />
               </div>
-              <span>clik.agencia@gmail.com</span>
+              <span>nahueltisera03@gmail.com</span>
             </li>
             <li className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-primary">
                 <MessageCircle className="h-4 w-4 shrink-0" />
               </div>
-              <span>+54 9 11 3350-1445</span>            </li>
+              <span>+54 9 11 3350-1445</span>
+            </li>
           </ul>
         </div>
 
@@ -46,7 +48,8 @@ export function Footer() {
                 rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
                 className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 grid place-items-center text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-white hover:shadow-xl transition-all duration-300"
               >
-                <Icon className="h-5 w-5" />              </a>
+                <Icon className="h-5 w-5" />
+              </a>
             ))}
           </div>
         </div>
@@ -57,7 +60,8 @@ export function Footer() {
         <div className="flex gap-6">
           <a href="#" className="hover:text-primary transition-colors">Términos</a>
           <a href="#" className="hover:text-primary transition-colors">Privacidad</a>
-        </div>      </div>
+        </div>
+      </div>
     </footer>
   );
 }
