@@ -1,11 +1,5 @@
-<<<<<<< HEAD
 import { useState, useRef, useEffect } from "react";
-import { Check, Globe, MonitorSmartphone, BrainCircuit, CreditCard, Zap, ArrowRight, Star } from "lucide-react";
-=======
-import { Link } from "@tanstack/react-router";
-import { Check, Globe, Layers, Bot, CreditCard, ArrowRight, Sparkles } from "lucide-react";
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-import { Button } from "@/components/ui/button";
+import { Check, Globe, MonitorSmartphone, BrainCircuit, CreditCard, Zap, ArrowRight, Star } from "lucide-react";import { Button } from "@/components/ui/button";
 import { MaintenanceTooltip } from "./MaintenanceTooltip";
 
 type Plan = {
@@ -55,12 +49,7 @@ const categories: Category[] = [
         sub: "Pago único - mantenimiento 8.000 ARS/mes",
         desc: "Una landing page simple y efectiva para mostrar tu negocio.",
         effort: "Entrega en 5 días",
-<<<<<<< HEAD
-        features: ["Landing page hasta 4 secciones", "Diseño responsive", "WhatsApp integrado", "Redes sociales integrados"],
-=======
-        features: ["Landing page de 1 sección", "Diseño responsive", "Formulario de contacto", "WhatsApp integrado", "Hosting incluido"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Landing page hasta 4 secciones", "Diseño responsive", "WhatsApp integrado", "Redes sociales integrados"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
@@ -71,13 +60,7 @@ const categories: Category[] = [
         sub: "Pago único - mantenimiento 35.000/mes",
         desc: "Web multi-sección profesional para crecer en serio.",
         effort: "Entrega en 10 días",
-<<<<<<< HEAD
-        features: ["Secciones ilimitadas, hasta 2 rutas", "Diseño enfocado y responsive", "WhatsApp integrado", "Redes sociales integrados", "Formularios de contacto"],
-=======
-        features: ["Web de hasta 5 secciones", "Diseño premium personalizado", "Reservas y formularios", "SEO básico", "Mantenimiento mensual", "Soporte prioritario"],
-        highlighted: true,
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Secciones ilimitadas, hasta 2 rutas", "Diseño enfocado y responsive", "WhatsApp integrado", "Redes sociales integrados", "Formularios de contacto"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
@@ -88,12 +71,7 @@ const categories: Category[] = [
         sub: "Pago único - mantenimiento 50.000/mes",
         desc: "Web completa con optimización avanzada e integraciones.",
         effort: "Entrega en 3 semanas",
-<<<<<<< HEAD
-        features: ["Rutas y secciones ilimitadas", "Diseño exclusivo a medida", "Integraciones (calendario, chatbot, etc)", "WhatsApp integrado", "Redes sociales integrados", "Formulario de contacto", "Soporte dedicado"],
-=======
-        features: ["Web ilimitada en secciones", "Diseño exclusivo a medida", "SEO avanzado + analítica", "Integraciones (CRM, email, pagos)", "Velocidad y rendimiento óptimos", "Soporte dedicado"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Consultar",
+        features: ["Rutas y secciones ilimitadas", "Diseño exclusivo a medida", "Integraciones (calendario, chatbot, etc)", "WhatsApp integrado", "Redes sociales integrados", "Formulario de contacto", "Soporte dedicado"],        cta: "Consultar",
         ctaHref: "#contacto",
       },
     ],
@@ -113,68 +91,39 @@ const categories: Category[] = [
       {
         tier: "basic",
         name: "Básico",
-<<<<<<< HEAD
         price: "400.000 ARS",
         sub: "Pago único - mantenimiento 30.000/mes",
         desc: "Sistema simple para resolver una tarea concreta.",
         effort: "1-2 semanas",
-        features: ["Sistema de 1 módulo funcional", "Login básico de usuarios", "Panel de administración", "Base de datos incluida"],
-=======
-        price: "USD 690",
-        sub: "pago único + USD 29/mes",
-        desc: "Sistema simple para una tarea concreta.",
-        effort: "1-2 semanas",
-        features: ["Sistema de 1 módulo", "Login básico", "Panel de administración", "Base de datos incluida", "Hosting y soporte"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Sistema de 1 módulo funcional", "Login básico de usuarios", "Panel de administración", "Base de datos incluida"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
         tier: "mid",
         name: "Intermedio",
-<<<<<<< HEAD
         badge: "Más elegido",
         price: "750.000 ARS",
         sub: "Pago único - mantenimiento 80.000/mes",
         desc: "Gestión con módulos múltiples, roles y reportes.",
         effort: "3-4 semanas",
-        features: ["Múltiples módulos integrados", "Usuarios con roles y permisos", "Reportes y exportaciones", "Hasta 1 integración con API externa"],
-=======
-        price: "USD 1.490",
-        sub: "pago único + USD 59/mes",
-        desc: "Gestión con usuarios, roles y reportes.",
-        effort: "3-4 semanas",
-        features: ["Múltiples módulos integrados", "Usuarios y roles", "Reportes y exportaciones", "Notificaciones por email", "Mantenimiento mensual", "Soporte prioritario"],
-        highlighted: true,
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Múltiples módulos integrados", "Usuarios con roles y permisos", "Reportes y exportaciones", "Hasta 1 integración con API externa"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
         tier: "premium",
         name: "Premium",
-<<<<<<< HEAD
         badge: "Para escalar",
         price: "Desde 1.200.000 ARS",
         sub: "Pago único - mantenimiento 120.000/mes",
         desc: "Sistema completo, escalable y hecho para tu negocio.",
         effort: "Proyecto a medida",
-        features: ["Arquitectura completamente personalizada", "Integraciones con APIs externas (pasarela de pagos, etc)", "Dashboards avanzados con Métricas en tiempo real"],
-=======
-        price: "Desde USD 3.500",
-        sub: "presupuesto + USD 99/mes",
-        desc: "Sistema completo a medida para tu negocio.",
-        effort: "Proyecto a medida",
-        features: ["Arquitectura a medida", "Integraciones con APIs externas", "Pagos online y facturación", "Dashboards avanzados", "Escalabilidad y seguridad", "Soporte dedicado"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Consultar",
+        features: ["Arquitectura completamente personalizada", "Integraciones con APIs externas (pasarela de pagos, etc)", "Dashboards avanzados con Métricas en tiempo real"],        cta: "Consultar",
         ctaHref: "#contacto",
       },
     ],
   },
   {
     id: "ia",
-<<<<<<< HEAD
     label: "Automatización con IA",
     shortLabel: "IA",
     icon: BrainCircuit,
@@ -183,51 +132,26 @@ const categories: Category[] = [
     accentText: "text-fuchsia-400",
     accentBg: "bg-fuchsia-900/20",
     accentBorder: "border-fuchsia-500/20",
-    intro: "Automatizaciones de procesos, ayuda en la toma de decisiones, etc. con IA entrenada",
-=======
-    label: "IA y Automatización",
-    icon: Bot,
-    intro: "Automatizá tareas repetitivas y vendé mientras dormís.",
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-    plans: [
+    intro: "Automatizaciones de procesos, ayuda en la toma de decisiones, etc. con IA entrenada",    plans: [
       {
         tier: "basic",
         name: "Básico",
-<<<<<<< HEAD
         price: "100.000 ARS",
         sub: "Pago único · mantenimiento a definir/mes",
         desc: "Chatbot en tiempo real para no perder clientes.",
         effort: "1 flujo",
-        features: ["Chatbot con IA mediante Wspp/Web", "Respuesta a preguntas frecuentes"],
-=======
-        price: "USD 390",
-        sub: "pago único + USD 25/mes",
-        desc: "Una automatización simple lista para usar.",
-        effort: "Entrega rápida",
-        features: ["1 flujo automatizado", "Conexión con WhatsApp o email", "Respuestas automáticas", "Plantillas pre-armadas", "Soporte inicial"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Chatbot con IA mediante Wspp/Web", "Respuesta a preguntas frecuentes"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
         tier: "mid",
         name: "Intermedio",
-<<<<<<< HEAD
         badge: "Más elegido",
         price: "300.000 ARS",
         sub: "Pago único · mantenimiento a definir/mes",
         desc: "Chatbot gerencial que te ayuda con la toma de decisiones diarias.",
         effort: "Hasta 5 flujos",
-        features: ["Integración Chatbot con IA al sistema", "Agentes de IA entrenados con tu negocio", "Reportes semanales", "Historial de chats"],
-=======
-        price: "USD 890",
-        sub: "pago único + USD 49/mes",
-        desc: "Integraciones y flujos conectados entre apps.",
-        effort: "Hasta 5 flujos",
-        features: ["Hasta 5 flujos automatizados", "Integraciones (Sheets, CRM, Notion)", "Chatbot básico con IA", "Reportes automáticos", "Mantenimiento mensual"],
-        highlighted: true,
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Empezar ahora",
+        features: ["Integración Chatbot con IA al sistema", "Agentes de IA entrenados con tu negocio", "Reportes semanales", "Historial de chats"],        cta: "Empezar ahora",
         ctaHref: "#contacto",
       },
       {
@@ -238,48 +162,7 @@ const categories: Category[] = [
         sub: "Pago único · mantenimiento a definir/mes",
         desc: "IA personalizada entrenada con tu negocio.",
         effort: "Proyecto a medida",
-<<<<<<< HEAD
-        features: ["Automatizaciones ilimitadas", "Integraciones con otros sistemas (gmail, calendar, etc)", "Soporte dedicado"],
-=======
-        features: ["Agentes de IA entrenados con tu info", "Automatizaciones ilimitadas", "Integraciones personalizadas", "Análisis predictivo", "Optimización continua", "Soporte dedicado"],
-        cta: "Consultar",
-      },
-    ],
-  },
-  {
-    id: "tarjetas",
-    label: "Tarjetas Digitales",
-    icon: CreditCard,
-    intro: "Invitaciones modernas para casamientos, 15, cumpleaños y eventos.",
-    plans: [
-      {
-        name: "Esencial",
-        price: "USD 49",
-        sub: "pago único",
-        desc: "Tarjeta digital simple y elegante.",
-        effort: "Entrega en 48hs",
-        features: ["Diseño a elegir del catálogo", "Tu información personalizada", "Compartir por WhatsApp", "Confirmación de asistencia", "Mobile-first"],
-        cta: "Elegir diseño",
-      },
-      {
-        name: "Premium",
-        price: "USD 89",
-        sub: "pago único",
-        desc: "Animaciones, música y cuenta regresiva.",
-        effort: "Entrega en 72hs",
-        features: ["Diseño premium animado", "Música personalizada", "Cuenta regresiva", "Galería de fotos", "Mapa interactivo", "RSVP automático"],
-        highlighted: true,
-        cta: "Elegir diseño",
-      },
-      {
-        name: "Boda completa",
-        price: "USD 149",
-        sub: "pago único",
-        desc: "La invitación perfecta para tu gran día.",
-        effort: "Entrega en 5 días",
-        features: ["Diseño exclusivo a medida", "Web completa del evento", "Confirmaciones por categoría", "Lista de regalos digital", "Galería privada de invitados", "Soporte prioritario"],
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        cta: "Consultar",
+        features: ["Automatizaciones ilimitadas", "Integraciones con otros sistemas (gmail, calendar, etc)", "Soporte dedicado"],        cta: "Consultar",
         ctaHref: "#contacto",
       },
     ],
@@ -339,7 +222,6 @@ function PlanCard({ plan, cat, animKey }: { plan: Plan; cat: Category; animKey: 
   const isHighlighted = plan.tier === "mid";
 
   return (
-<<<<<<< HEAD
     <div
       key={animKey}
       className={`relative flex flex-col rounded-[2.5rem] p-8 transition-all duration-500 ${
@@ -517,96 +399,7 @@ export function Pricing() {
 
         <div key={`cards-${contentKey}`} className="grid md:grid-cols-3 gap-5" style={{ animation: "var(--animate-fade-up)", animationDelay: "0.08s", opacity: 0, animationFillMode: "forwards" }}>
           {active.plans.map((plan) => (
-            <PlanCard key={plan.name} plan={plan} cat={active} animKey={`${activeId}-${plan.name}`} />
-=======
-    <section id="precios" className="py-24 md:py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wider uppercase mb-5">
-            <Sparkles className="h-3.5 w-3.5" /> Servicios y planes
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold mb-4 leading-[1.1]">
-            Elegí el servicio que <span className="text-primary italic">tu negocio necesita</span>
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Cuatro categorías, planes claros. Empezá simple y escalá cuando estés listo.
-          </p>
-        </div>
-
-        <Tabs defaultValue="webs" className="w-full">
-          <TabsList className="mx-auto mb-12 grid w-full max-w-3xl grid-cols-2 sm:grid-cols-4 h-auto bg-secondary p-1.5 rounded-xl">
-            {categories.map((c) => {
-              const Icon = c.icon;
-              return (
-                <TabsTrigger
-                  key={c.id}
-                  value={c.id}
-                  className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow rounded-lg py-3 gap-2 text-foreground/70"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-sm font-medium hidden sm:inline">{c.label}</span>
-                  <span className="text-xs font-medium sm:hidden">{c.label.split(" ")[0]}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-
-          {categories.map((c) => (
-            <TabsContent key={c.id} value={c.id} className="mt-0">
-              <p className="text-center text-muted-foreground mb-10">{c.intro}</p>
-              <div className="grid md:grid-cols-3 gap-6">
-                {c.plans.map((p) => (
-                  <div
-                    key={p.name}
-                    className={`relative p-8 rounded-2xl flex flex-col transition-all duration-300 ${
-                      p.highlighted
-                        ? "bg-gradient-to-b from-primary/15 to-card border-2 border-primary shadow-glow scale-[1.02]"
-                        : "bg-card border border-border hover:border-primary/40 hover:shadow-elegant"
-                    }`}
-                  >
-                    {p.highlighted && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-primary text-xs font-semibold text-primary-foreground shadow-glow">
-                        Más elegido
-                      </div>
-                    )}
-                    <div className="mb-6">
-                      <h3 className="font-display text-2xl font-semibold mb-2 text-foreground">{p.name}</h3>
-                      <p className="text-sm text-muted-foreground">{p.desc}</p>
-                    </div>
-                    <div className="mb-4">
-                      <div className="text-4xl font-display font-semibold text-foreground">{p.price}</div>
-                      <div className="text-sm text-muted-foreground mt-1">{p.sub}</div>
-                    </div>
-                    <div className="mb-6 inline-flex self-start px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-semibold">
-                      {p.effort}
-                    </div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      {p.features.map((f) => (
-                        <li key={f} className="flex gap-3 text-sm text-foreground/80">
-                          <Check className="h-5 w-5 text-primary shrink-0" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button variant={p.highlighted ? "hero" : "outlineGlow"} size="lg" asChild>
-                      <a href="#contacto">{p.cta ?? "Empezar"}</a>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              {c.id === "tarjetas" && (
-                <div className="text-center mt-10">
-                  <Button variant="outlineGlow" size="lg" asChild>
-                    <Link to="/tarjetas">
-                      Ver catálogo completo <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-          ))}
+            <PlanCard key={plan.name} plan={plan} cat={active} animKey={`${activeId}-${plan.name}`} />          ))}
         </div>
       </div>
     </section>

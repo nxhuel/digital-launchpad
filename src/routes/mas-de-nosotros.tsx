@@ -27,7 +27,7 @@ const clients = [
     title: "Mi Amigo Fiel",
     image: PETSHOP_CLIENT,
     desc: "Emprendimiento familiar",
-    url: "https://ejemplo.com",
+    url: "https://miamigofiel.clik.com.ar/",
   },
   // {
   //   tag: "Moda",
@@ -244,12 +244,12 @@ function MasDeNosotros() {
                       {
                         name: "Julieta Risso",
                         role: "Diseñadora UI/UX; CM & Analista",
-                        url: "https://linkedin.com/in/julieta-risso",
+                        url: "https://www.linkedin.com/in/julieta-r-911192263/",
                       },
                       {
                         name: "Nahuel Tisera",
                         role: "Software Dev & Analista",
-                        url: "https://linkedin.com/in/nahuel-tisera",
+                        url: "https://www.linkedin.com/in/tisera-nahuel-ab3864219/",
                       },
                     ].map((p) => (
                       <div
@@ -264,6 +264,8 @@ function MasDeNosotros() {
                         </div>
                         <a
                           href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="h-10 w-10 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all"
                         >
                           <Linkedin className="h-4 w-4" />

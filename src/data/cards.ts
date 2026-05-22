@@ -39,26 +39,8 @@ export type CardDesign = {
   name: string;
   category: string; // slug
   tag?: CardTag;
-<<<<<<< HEAD
   demoUrl?: string;
-  imageUrl?: string;
-=======
-  // Visual
-  accent: string; // tailwind gradient classes inside the phone screen
-  ring: string;
-  font: string; // font class for the title
-  badge: string;
-  // Invite content
-  subtitle: string;
-  date: string;
-  location: string;
-  cta: string;
-  // Optional rich invite content
-  eventISO?: string; // for live countdown
-  song?: { title: string; artist: string };
-  mapsUrl?: string;
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-};
+  imageUrl?: string;};
 
 import invDig1 from "../assets/inv-dig-1.png";
 import luciaMateo from "../assets/luciamateocasamiento.png";

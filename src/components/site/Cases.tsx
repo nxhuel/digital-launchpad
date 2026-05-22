@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { UtensilsCrossed, Shirt, Briefcase } from "lucide-react";
 
 const cases = [
@@ -22,22 +21,7 @@ const cases = [
     title: "Estudio Vega",
     desc: "Consultora con landing profesional que duplicó sus consultas mensuales.",
     url: "https://ejemplo.com",
-  },
-=======
-import { UtensilsCrossed, Shirt, Briefcase, TrendingUp, Star } from "lucide-react";
-
-const cases = [
-  { icon: UtensilsCrossed, tag: "Gastronomía", title: "La Trattoria", desc: "Restaurante familiar que ahora vende online y recibe reservas automáticas.", metric: "+180% pedidos" },
-  { icon: Shirt, tag: "Indumentaria", title: "Norte Clothing", desc: "Marca de ropa que abrió su tienda digital y vende en todo el país.", metric: "+340% ventas" },
-  { icon: Briefcase, tag: "Servicios", title: "Estudio Vega", desc: "Consultora con landing profesional que duplicó sus consultas mensuales.", metric: "x2 consultas" },
-];
-
-const testimonials = [
-  { name: "Camila R.", role: "Dueña de pastelería", text: "No sabía nada de tecnología y en una semana tenía mi web vendiendo. Increíble la atención." },
-  { name: "Martín L.", role: "Diseñador freelance", text: "Mi landing me trajo más clientes en un mes que años de Instagram. Súper recomendados." },
-  { name: "Lucía F.", role: "Marca de ropa", text: "Pensé que iba a ser carísimo y complicado. Fue todo lo contrario. Hoy facturo el doble." },
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-];
+  },];
 
 export function Cases() {
   return (
@@ -63,7 +47,6 @@ export function Cases() {
                   {c.tag}
                 </span>
               </div>
-<<<<<<< HEAD
               <h3 className="text-xl font-semibold mb-2">{c.title}</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">{c.desc}</p>
               <a
@@ -74,15 +57,23 @@ export function Cases() {
               >
                 Ver sitio web →
               </a>
-=======
-              <h3 className="font-display text-xl font-semibold mb-2 text-foreground">{c.title}</h3>
-              <p className="text-muted-foreground mb-6 leading-relaxed text-sm">{c.desc}</p>
-              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                <TrendingUp className="h-4 w-4" />
-                {c.metric}
-              </div>
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
             </article>
+          ))}
+        </div>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">
+                  {c.tag}
+                </span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">{c.title}</h3>
+              <p className="text-muted-foreground mb-6 leading-relaxed">{c.desc}</p>
+              <a
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm font-semibold text-gradient hover:underline"
+              >
+                Ver sitio web →
+              </a>            </article>
           ))}
         </div>
 

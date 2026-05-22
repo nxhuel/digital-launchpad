@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { MessageSquare, PenTool, Rocket } from "lucide-react";
 
 const steps = [
-<<<<<<< HEAD
   {
     n: "01",
     icon: MessageSquare,
@@ -26,13 +25,7 @@ const steps = [
     image:
       "https://images.unsplash.com/flagged/photo-1553267252-d100936057c1?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     desc: "Te entregamos todo funcionando y te explicamos cómo usarlo. El soporte no termina al entregar.",
-  },
-=======
-  { n: "01", title: "Contanos tu idea", desc: "Charlamos por WhatsApp o video. Entendemos tu negocio y tus objetivos." },
-  { n: "02", title: "Diseñamos tu solución", desc: "Creamos una propuesta a medida. Te mostramos avances en cada paso." },
-  { n: "03", title: "Lanzamos tu negocio", desc: "Publicamos tu sitio, te capacitamos y quedás listo para vender online." },
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-];
+  },];
 
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -58,7 +51,6 @@ export function HowItWorks() {
   const ref = useReveal();
 
   return (
-<<<<<<< HEAD
     <section id="como-funciona" className="py-20 md:py-28 relative">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center max-w-2xl mx-auto mb-14">
@@ -66,23 +58,11 @@ export function HowItWorks() {
             Cómo funciona
           </div>
           <h2 className="font-display text-4xl md:text-5xl  mb-4">
-            3 pasos para <span className="text-primary">estar online</span>
-=======
-    <section id="como-funciona" className="py-24 md:py-32 relative bg-card/40">
-      <div className="max-w-7xl mx-auto px-6 relative">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wider uppercase mb-5">
-            Cómo funciona
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold mb-4 leading-[1.1]">
-            3 pasos simples para <span className="text-primary italic">estar online</span>
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-          </h2>
+            3 pasos para <span className="text-primary">estar online</span>          </h2>
           <p className="text-muted-foreground text-base leading-relaxed">
             Un proceso claro, sin sorpresas, pensado para que sea fácil desde el primer día.
           </p>
         </div>
-<<<<<<< HEAD
 
         <div ref={ref} className="reveal relative">
           <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-primary/5 to-primary/20 to-primary/5 -translate-y-1/2 -z-10" />
@@ -147,23 +127,7 @@ export function HowItWorks() {
                 </div>
               );
             })}
-          </div>
-=======
-        <div className="grid md:grid-cols-3 gap-6 relative">
-          {steps.map((s, i) => (
-            <div key={s.n} className="relative">
-              <div className="p-8 rounded-2xl bg-card border border-border h-full hover:border-primary/40 transition-colors">
-                <div className="text-5xl font-display font-semibold text-primary mb-4">{s.n}</div>
-                <h3 className="font-display text-2xl font-semibold mb-3 text-foreground">{s.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{s.desc}</p>
-              </div>
-              {i < steps.length - 1 && (
-                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-gradient-to-r from-primary to-transparent" />
-              )}
-            </div>
-          ))}
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-        </div>
+          </div>        </div>
       </div>
     </section>
   );

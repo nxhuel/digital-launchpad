@@ -72,7 +72,7 @@ export function CTA() {
                 O escribinos directamente
               </p>
               <form
-                action="https://formsubmit.co/studionodu@gmail.com"
+                action="https://formsubmit.co/nahueltisera03@gmail.com"
                 method="POST"
                 onSubmit={handleSubmit}
                 className="space-y-4"

@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { Globe, CreditCard, MonitorSmartphone, BrainCircuit } from "lucide-react";
 
 const services = [
-<<<<<<< HEAD
   {
     icon: Globe,
     title: "Páginas Web",
@@ -26,16 +25,7 @@ const services = [
     title: "IA",
     image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1000",
     desc: "Automatizacion con inteligencia artificial.",
-  },
-=======
-  { icon: Globe, title: "Páginas web", desc: "Sitios profesionales que transmiten confianza y atraen clientes desde el primer clic." },
-  { icon: Layout, title: "Landing pages", desc: "Páginas optimizadas para vender, captar leads o lanzar tu próximo producto." },
-  { icon: ShoppingBag, title: "Tiendas online", desc: "Vendé 24/7 con un e-commerce simple de gestionar y listo para crecer." },
-  { icon: Zap, title: "Automatizaciones con IA", desc: "Chatbots, formularios y flujos que trabajan por vos sin esfuerzo." },
-  { icon: Repeat, title: "Suscripción mensual", desc: "Hosting, mantenimiento y actualizaciones incluidas. Olvidate de los problemas." },
-  { icon: LifeBuoy, title: "Soporte cercano", desc: "Te acompañamos por WhatsApp. Hablamos claro, sin tecnicismos." },
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-];
+  },];
 
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -64,18 +54,9 @@ export function Services() {
     <section id="servicios" className="py-20 md:py-28 relative">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-2xl mb-16">
-<<<<<<< HEAD
           <div className="text-sm font-medium text-primary mb-3">SERVICIOS</div>
           <h2 className="font-display text-4xl md:text-5xl  mb-4">
-            Lo que necesitamos para <span className="text-primary">empezar online</span>
-=======
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wider uppercase mb-5">
-            Servicios
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold mb-4 leading-[1.1]">
-            Todo lo que necesitás para <span className="text-primary italic">empezar online</span>
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-          </h2>
+            Lo que necesitamos para <span className="text-primary">empezar online</span>          </h2>
           <p className="text-lg text-muted-foreground">
             Soluciones simples para Emprendedores. Sin complicaciones técnicas.
           </p>
@@ -84,12 +65,7 @@ export function Services() {
           {services.map((s) => (
             <div
               key={s.title}
-<<<<<<< HEAD
-              className="bg-white group rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(124,58,237,0.1)] border border-slate-100 transition-all duration-500 hover:-translate-y-2"
-=======
-              className="group p-7 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-elegant transition-all duration-300 hover:-translate-y-1"
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
-            >
+              className="bg-white group rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(124,58,237,0.1)] border border-slate-100 transition-all duration-500 hover:-translate-y-2"            >
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img 
                   src={s.image} 
@@ -108,11 +84,6 @@ export function Services() {
                 <h3 className="text-lg font-bold mb-2 text-foreground group-hover:text-primary transition-colors">{s.title}</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">{s.desc}</p>
               </div>
-<<<<<<< HEAD
-=======
-              <h3 className="font-display text-xl font-semibold mb-2 text-foreground">{s.title}</h3>
-              <p className="text-muted-foreground leading-relaxed text-sm">{s.desc}</p>
->>>>>>> 108bdb491ebbd172a17967dba400e76c57056ad2
             </div>
           ))}
         </div>
