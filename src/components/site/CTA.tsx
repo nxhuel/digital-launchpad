@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ArrowRight, Send, MessageCircle, Check } from "lucide-react";
+import { Send, MessageCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SITE, whatsappLink } from "@/config/site";
 
 export function CTA() {
   const [sending, setSending] = useState(false);
@@ -61,7 +62,7 @@ export function CTA() {
                 asChild
                 className="self-start rounded-2xl bg-primary hover:bg-indigo-700 shadow-xl shadow-primary/20 h-14 px-8 font-bold"
               >
-                <a href="https://wa.me/5491133501445" target="_blank" rel="noopener noreferrer">
+                <a href={SITE.whatsapp.link} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="mr-2 h-5 w-5" /> Hablar por WhatsApp
                 </a>
               </Button>
@@ -72,7 +73,7 @@ export function CTA() {
                 O escribinos directamente
               </p>
               <form
-                action="https://formsubmit.co/nahueltisera03@gmail.com"
+                action={`https://formsubmit.co/${SITE.email}`}
                 method="POST"
                 onSubmit={handleSubmit}
                 className="space-y-4"

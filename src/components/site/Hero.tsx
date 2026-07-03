@@ -1,407 +1,206 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  ArrowRight,
-  Sparkles,
-  Globe,
-  MonitorSmartphone,
-  BrainCircuit,
-  CreditCard,
-} from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowRight, CreditCard, Globe, Database, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-
-function WebMockup() {
-  return (
-    <div className="w-full select-none" style={{ animation: "var(--animate-float)" }}>
-      <div className="rounded-2xl border border-primary/20 bg-card shadow-xl overflow-hidden">
-        <div className="h-8 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/10 flex items-center px-3 gap-2">
-          <div className="flex gap-1.5">
-            {["bg-primary/40", "bg-primary/40", "bg-primary/40"].map((c) => (
-              <div key={c} className={`h-2 w-2 rounded-full ${c}`} />
-            ))}
-          </div>
-          <div className="flex-1 h-5 mx-2 rounded-full bg-white border border-primary/10 flex items-center px-3 text-[10px] text-muted-foreground">
-            tu-negocio.com
-          </div>
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="h-24 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <div className="text-primary text-xs font-bold tracking-widest uppercase">
-              Hero Banner
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {["Servicios", "Nosotros", "Contacto"].map((t) => (
-              <div
-                key={t}
-                className="h-10 rounded-lg bg-primary/10 border border-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary"
-              >
-                {t}
-              </div>
-            ))}
-          </div>
-          <div className="h-6 w-24 rounded-lg bg-gradient-to-r from-primary to-primary/80" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DashboardMockup() {
-  return (
-    <div className="w-full select-none space-y-3" style={{ animation: "var(--animate-float)" }}>
-      <div className="rounded-2xl border border-primary/20 bg-card shadow-xl overflow-hidden">
-        <div className="h-8 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/10 flex items-center px-4 gap-3">
-          <div className="h-2 w-2 rounded-full bg-primary/40" />
-          <div className="text-[10px] font-bold text-primary uppercase tracking-wider">Panel</div>
-        </div>
-        <div className="p-4">
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {[
-              { l: "Usuarios", v: "2.841" },
-              { l: "Ventas", v: "$8.4k" },
-              { l: "Uptime", v: "99.9%" },
-            ].map(({ l, v }) => (
-              <div key={l} className="rounded-xl bg-primary/10 border border-primary/10 p-2.5">
-                <div className="text-[9px] font-semibold text-primary uppercase mb-1">{l}</div>
-                <div className="text-sm font-bold text-foreground">{v}</div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl bg-primary/10 border border-primary/10 p-3 space-y-2">
-            {["Pedido #1042", "Usuario Maria G.", "Pago $1.200"].map((t) => (
-              <div key={t} className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0" />
-                <span className="text-[10px] text-foreground/70 font-medium">{t}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AutomationMockup() {
-  return (
-    <div className="w-full select-none space-y-2.5" style={{ animation: "var(--animate-float)" }}>
-      <div className="rounded-2xl border border-primary/20 bg-card shadow-xl overflow-hidden">
-        <div className="h-9 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/10 flex items-center px-4 gap-2">
-          <div className="h-4 w-4 rounded-full bg-gradient-to-br from-primary to-primary/80" />
-          <span className="text-[10px] font-bold text-primary">Asistente IA</span>
-        </div>
-        <div className="p-4 space-y-2.5">
-          <div className="flex gap-2 items-end">
-            <div className="h-5 w-5 rounded-full bg-primary/10 shrink-0" />
-            <div className="bg-primary/10 border border-primary/10 rounded-xl rounded-bl-sm px-3 py-2 text-[10px] text-foreground max-w-[80%]">
-              Hola! Como te ayudo?
-            </div>
-          </div>
-          <div className="flex gap-2 items-end justify-end">
-            <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl rounded-br-sm px-3 py-2 text-[10px] text-white max-w-[80%]">
-              Quiero info sobre servicios
-            </div>
-          </div>
-          <div className="flex gap-2 items-end">
-            <div className="h-5 w-5 rounded-full bg-primary/10 shrink-0" />
-            <div className="bg-primary/10 border border-primary/10 rounded-xl rounded-bl-sm px-3 py-2 text-[10px] text-foreground max-w-[80%]">
-              Tenemos webs, sistemas y mas...
-            </div>
-          </div>
-        </div>
-      </div>
-      {[{ ok: true }, { ok: true }, { ok: false }].map(({ ok }, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-primary/10 shadow-sm"
-        >
-          <span className="text-sm">{ok ? "✓" : "..."}</span>
-          <span className="text-xs font-medium text-foreground">
-            {["Lead recibido", "Email enviado", "CRM"][i]}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CardsMockup() {
-  return (
-    <div
-      className="w-full select-none flex flex-col items-center gap-4"
-      style={{ animation: "var(--animate-float)" }}
-    >
-      <div className="w-36 h-56 rounded-3xl border-4 border-primary/20 bg-card shadow-xl overflow-hidden relative">
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 rounded-full bg-primary/20" />
-        <div className="pt-5 p-3 space-y-2">
-          <div className="rounded-xl bg-gradient-to-br from-primary to-primary/80 p-3 text-white">
-            <div className="text-[8px] font-bold opacity-70 uppercase tracking-wider mb-1">
-              Clik
-            </div>
-            <div className="text-sm font-bold leading-tight">Tu Nombre</div>
-            <div className="text-[8px] opacity-80 mt-0.5">Founder / CEO</div>
-          </div>
-          <div className="rounded-lg bg-primary/10 border border-primary/10 p-2 flex items-center justify-center gap-1">
-            <span className="text-[8px] font-medium text-primary">QR</span>
-          </div>
-          {["WhatsApp", "Email", "IG"].map((s) => (
-            <div
-              key={s}
-              className="h-4 rounded-lg bg-primary/10 border border-primary/10 flex items-center px-2"
-            >
-              <span className="text-[7px] font-medium text-primary">{s}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <p className="text-xs text-primary font-semibold">Digital Card</p>
-    </div>
-  );
-}
+import { ROUTES } from "@/config/site";
+import heroBg from "@/assets/logo-v3.png";
+import { PhoneMockup } from "@/components/mockups/PhoneMockup";
+import { BrowserMockup } from "@/components/mockups/BrowserMockup";
+import { DashboardMockup } from "@/components/mockups/DashboardMockup";
+import { AIMockup } from "@/components/mockups/AIMockup";
 
 const services = [
   {
-    id: "webs",
+    id: "tarjetas",
+    label: "Tarjetas Digitales",
+    icon: CreditCard,
+    title: "Tarjetas digitales",
+    highlight: "para tus eventos",
+    description:
+      "Invitaciones interactivas con diseño moderno, QR, WhatsApp, Instagram y todo lo que necesitás.",
+    cta: { label: "Crear tarjeta", href: ROUTES.tarjetas },
+    mockup: <PhoneMockup />,
+  },
+  {
+    id: "web",
     label: "Páginas Web",
     icon: Globe,
-    accentFrom: "from-primary",
-    accentTo: "to-primary/80",
-    visual: <WebMockup />,
-    cta: "Quiero mi web",
+    title: "Páginas web",
+    highlight: "que convierten",
+    description:
+      "Landing pages y sitios profesionales con diseño premium, optimizados para velocidad y SEO.",
+    cta: { label: "Ver planes web", href: ROUTES.soluciones },
+    mockup: <BrowserMockup />,
   },
   {
     id: "sistemas",
     label: "Sistemas Web",
-    icon: MonitorSmartphone,
-    accentFrom: "from-primary",
-    accentTo: "to-primary/80",
-    visual: <DashboardMockup />,
-    cta: "Quiero un sistema",
+    icon: Database,
+    title: "Sistemas web",
+    highlight: "a tu medida",
+    description:
+      "Dashboards, CRM y software SaaS diseñados para digitalizar y potenciar tu negocio.",
+    cta: { label: "Consultar sistema", href: ROUTES.soluciones },
+    mockup: <DashboardMockup />,
   },
   {
     id: "ia",
     label: "IA",
-    icon: BrainCircuit,
-    accentFrom: "from-primary",
-    accentTo: "to-primary/80",
-    visual: <AutomationMockup />,
-    cta: "Automatizar",
+    icon: Bot,
+    title: "Automatización",
+    highlight: "con inteligencia",
+    description:
+      "Chatbots, asistentes virtuales y workflows automatizados con IA para tu negocio.",
+    cta: { label: "Explorar IA", href: ROUTES.soluciones },
+    mockup: <AIMockup />,
   },
-  {
-    id: "tarjetas",
-    label: "Tarjetas",
-    icon: CreditCard,
-    accentFrom: "from-primary",
-    accentTo: "to-primary/80",
-    visual: <CardsMockup />,
-    cta: "Ver diseños",
-    href: "/tarjetas",
-    isInternal: true,
-  },
-] as const;
+];
 
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          el.classList.add("visible");
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
+const AUTOPLAY_INTERVAL = 10000;
+const TRANSITION_DURATION = 450;
 
-import bannerImg from "../../assets/logo-v3.png";
 export function Hero() {
-  const [active, setActive] = useState(0);
-  const [visualKey, setVisualKey] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const heroRef = useReveal();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
+  const [phase, setPhase] = useState<"idle" | "transitioning">("idle");
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const activeService = services[activeIndex];
 
-  const svc = services[active];
-
-  const startInterval = () => {
+  const startTimer = useCallback(() => {
+    clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setActive((p) => {
-        const next = (p + 1) % services.length;
-        setVisualKey((k) => k + 1);
-        return next;
-      });
-    }, 4000);
-  };
-
-  useEffect(() => {
-    startInterval();
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+      setActiveIndex((prev) => (prev + 1) % services.length);
+    }, AUTOPLAY_INTERVAL);
   }, []);
 
-  const goTo = (i: number) => {
-    if (i === active) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setActive(i);
-    setVisualKey((k) => k + 1);
-    startInterval();
+  useEffect(() => {
+    startTimer();
+    return () => clearInterval(intervalRef.current);
+  }, [startTimer]);
+
+  useEffect(() => {
+    if (phase === "transitioning") {
+      const timer = setTimeout(() => {
+        setPhase("idle");
+        setPrevIndex(null);
+      }, TRANSITION_DURATION);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  const goToService = (index: number) => {
+    if (index === activeIndex || phase === "transitioning") return;
+    clearInterval(intervalRef.current);
+    setPrevIndex(activeIndex);
+    setActiveIndex(index);
+    setPhase("transitioning");
+    startTimer();
   };
 
-  return (
-    <section
-      id="top"
-      className="relative pt-32 pb-16 md:pt-44 md:pb-24 overflow-hidden min-h-[90vh] flex items-center"
-    >
-      {/* GIF Background with Vibrant Overlay */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-indigo-900">
-        <img 
-          src={bannerImg} 
-          alt="banner" 
-          className="absolute -top-[20%] left-0 w-full h-[140%] object-cover object-center will-change-transform"
-          style={{
-            transform: `translate3d(0, ${scrollY * 0.25}px, 0)`
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-700/90 via-purple-700/80 to-primary/90 mix-blend-multiply" />
-      </div>
+  const renderContent = (
+    service: (typeof services)[0],
+    state: "entering" | "exiting" | "visible",
+  ) => {
+    const isEntering = state === "entering";
+    const isExiting = state === "exiting";
 
-      {/* Decorative Glows */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-      </div>
+    return (
+      <div
+        className={`transition-all ease-out will-change-transform will-change-opacity`}
+        style={{
+          opacity: isExiting ? 0 : 1,
+          transform: isEntering
+            ? "translateY(8px)"
+            : isExiting
+              ? "translateY(-4px)"
+              : "translateY(0)",
+          transitionDuration: `${TRANSITION_DURATION}ms`,
+        }}
+      >
 
-      <div ref={heroRef} className="reveal max-w-6xl mx-auto px-6 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center text-white">
-          <div className="flex flex-col gap-6">
-            <div className="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[11px] font-bold uppercase tracking-wider">
-              <Sparkles className="h-3.5 w-3.5 text-white" />
-              <span>Tu negocio online en días</span>
-            </div>
 
-            <h1
-              className="font-display leading-[1.05] tracking-tight"
-              style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: "600" }}
-            >
-              Transformá tu idea en un <br />
-              <span className="text-white/90"> negocio digital</span>
-            </h1>
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight">
+                {service.title}{" "}
+                <span className="text-violet-400">{service.highlight}</span>
+              </h1>
+              <p className="text-base md:text-lg text-slate-300 leading-relaxed max-w-lg mt-3">
+                {service.description}
+              </p>
 
-            <p className="text-xl text-white/80 leading-relaxed max-w-lg font-medium">
-              Diseñamos, construimos y lanzamos lo que tu negocio necesita.{" "}
-              <br className="hidden md:block" />
-              Vos te enfocás en crecer; nosotros, en la tecnología.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Button
-                variant="default"
-                size="xl"
-                asChild
-                className="bg-white text-indigo-700 hover:bg-slate-50 shadow-xl shadow-indigo-900/20 px-8 rounded-2xl"
-              >
-                {"href" in svc ? (
-                  svc.isInternal ? (
-                    <Link to={svc.href}>
-                      {svc.cta} <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  ) : (
-                    <a href={svc.href}>
-                      {svc.cta} <ArrowRight className="ml-2 h-5 w-5" />
-                    </a>
-                  )
-                ) : (
-                  <a href="#planes">
-                    {svc.cta} <ArrowRight className="ml-2 h-5 w-5" />
-                  </a>
-                )}
-              </Button>
-              <Button
-                size="xl"
-                asChild
-                className="text-white hover:bg-indigo-700 px-8 rounded-2xl border border-white/20"
-              >
-                <a href="#como-funciona">Como funciona</a>
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-6 pt-2">
-              {[
-                { val: "+10", label: "Proyectos" },
-                { val: "7 dias", label: "Entrega promedio" },
-                { val: "100%", label: "Satisfacción" },
-              ].map(({ val, label }, i, arr) => (
-                <div key={label} className="flex items-center gap-6">
-                  <div>
-                    <div className="text-2xl font-display font-bold text-white">{val}</div>
-                    <div className="text-xs text-white/60 mt-0.5 uppercase tracking-wider">
-                      {label}
-                    </div>
-                  </div>
-                  {i < arr.length - 1 && <div className="h-10 w-px bg-white/20" />}
-                </div>
-              ))}
+              <div className="flex flex-wrap gap-2 mt-5">
+                <Button
+                  size="lg"
+                  asChild
+                  className="rounded-none bg-violet-600 hover:bg-violet-500 px-6 h-12 text-sm font-bold border-2 border-violet-400 text-white shadow-[3px_3px_0px_0px_rgba(139,92,246,0.3)] hover:shadow-[1px_1px_0px_0px_rgba(139,92,246,0.3)] active:shadow-none transition-all duration-200"
+                >
+                  <Link to={service.cta.href}>
+                    {service.cta.label} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div
-            className="relative flex items-center justify-center min-h-[400px] md:min-h-[500px]"
-            onMouseEnter={() => {
-              if (intervalRef.current) clearInterval(intervalRef.current);
-            }}
-            onMouseLeave={startInterval}
-          >
-            <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-primary/20 to-transparent opacity-30 blur-3xl" />
+          <div className="relative flex items-center justify-center">
+            <div className="w-full max-w-[320px] drop-shadow-2xl">
+              {service.mockup}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-            <div
-              key={visualKey}
-              className="relative w-full max-w-md h-full flex items-center justify-center"
-              style={{ animation: "var(--animate-fade-in)" }}
-            >
-              <div className="relative z-10 w-full px-8 md:px-12 flex justify-center">
-                {svc.visual}
-              </div>            </div>
+  return (
+    <section className="relative min-h-[calc(100vh-100px)] flex items-center overflow-hidden bg-slate-900">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-fixed"
+        style={{ backgroundImage: `url(${heroBg})` }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 to-slate-900 pointer-events-none" />
+
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-violet-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-violet-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-8">
+        <div className="relative">
+          {prevIndex !== null && (
+            <div className="absolute inset-0 pointer-events-none">
+              {renderContent(services[prevIndex], "exiting")}
+            </div>
+          )}
+          <div>
+            {renderContent(activeService, phase === "transitioning" ? "entering" : "visible")}
           </div>
         </div>
 
         <div
-          className="flex flex-wrap justify-center gap-2 mt-14"
-          role="tablist"
-          aria-label="Servicios"
+          className="flex flex-wrap justify-center gap-2 mt-6 pt-6 border-t border-slate-800"
         >
           {services.map((s, i) => {
-            const TabIcon = s.icon;
-            const isActive = active === i;
+            const Icon = s.icon;
+            const isActive = i === activeIndex;
             return (
               <button
                 key={s.id}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => goTo(i)}
-                className={`inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold border transition-all duration-300 cursor-pointer focus:outline-none ${
+                onClick={() => goToService(i)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold transition-all duration-200 will-change-transform ${
                   isActive
-                    ? "bg-white text-indigo-700 border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                    : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:text-white"
+                    ? "bg-violet-600 border-violet-500 text-white shadow-sm"
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                 }`}
               >
-                <TabIcon className="h-4 w-4 shrink-0" />
-                <span>{s.label}</span>
+                <Icon className="h-3.5 w-3.5" />
+                {s.label}
               </button>
             );
-          })}        </div>
+          })}
+          </div>
       </div>
     </section>
   );

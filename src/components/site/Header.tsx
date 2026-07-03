@@ -1,19 +1,30 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import clikLogo from "../../assets/logo-v2.png";
+import { Menu, X, ChevronDown } from "lucide-react";
+import { ROUTES } from "@/config/site";
+import clikLogo from "@/assets/logo-v2.png";
 
-const navLinks = [
-  { hash: "#servicios", label: "Servicios" },
-  { hash: "#como-funciona", label: "Cómo funciona" },
-  { hash: "#planes", label: "Planes" },
-  { hash: "#contacto", label: "Contacto" },
+const navItems = [
+  { label: "Inicio", to: ROUTES.home },
+  { label: "Cómo funciona", to: ROUTES.home, hash: "como-funciona" },
+  { label: "Planes", to: ROUTES.home, hash: "planes" },
+  {
+    label: "Servicios",
+    children: [
+      { label: "Tarjetas Digitales", to: ROUTES.tarjetas, desc: "Invitaciones interactivas para eventos" },
+      { label: "Soluciones Web", to: ROUTES.soluciones, desc: "Landing pages, sistemas y automatizaciones" },
+      { label: "Transferencia", to: ROUTES.transferencia, desc: "Pago vía Mercado Pago · QR · Alias" },
+    ],
+  },
+  { label: "Nosotros", to: ROUTES.nosotros },
 ];
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+  const currentPath = router.state.location.pathname;
+  const currentHash = router.state.location.hash;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -21,65 +32,128 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  function isActive(item: { to: string; hash?: string }): boolean {
+    if (item.hash) {
+      return currentPath === item.to && currentHash === `#${item.hash}`;
+    }
+    return currentPath === item.to;
+  }
+
+  const linkClass = (active: boolean) =>
+    `relative px-3 py-2 text-base font-semibold transition-colors ${active ? "text-violet-600" : "text-slate-700 hover:text-violet-600"
+    } before:absolute before:inset-x-3 before:bottom-0 before:h-1 before:bg-violet-600 before:origin-left before:transition-transform before:duration-200 ${active ? "before:scale-x-100" : "before:scale-x-0 hover:before:scale-x-100"
+    }`;
+
   return (
     <header
-      className={`fixed top-4 inset-x-0 z-50 transition-all duration-500 px-4 md:px-6 pointer-events-none`}
+      className={`sticky top-9 z-40 transition-all duration-500 ${scrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-white/80 backdrop-blur-sm"
+        }`}
     >
-      <div className={`max-w-6xl mx-auto h-16 flex items-center justify-between rounded-full px-6 md:px-10 transition-all duration-500 pointer-events-auto ${
-        scrolled 
-          ? "bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 py-2" 
-          : "bg-white/90 backdrop-blur-md border border-white/50 py-3"
-      }`}>
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="px-2 py-1 rounded-xl bg-slate-900/5 transition-colors group-hover:bg-slate-900/10">
-            <img src={clikLogo} alt="Clik Logo" className="h-8 w-auto object-contain" />
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
+          <div className="px-2 py-1 bg-slate-900/5">
+            <img src={clikLogo} alt="Clik" className="h-8 w-auto object-contain" />
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <a
-              key={link.hash}
-              href={link.hash}
-              className="text-sm text-slate-700 hover:text-primary transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
+        <nav className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            if ("children" in item && item.children) {
+              return (
+                <div key={item.label} className="relative group">
+                  <button
+                    className={`${linkClass(false)} flex items-center gap-1`}
+                  >
+                    {item.label}
+                    <ChevronDown className="h-3.5 w-3.5 mt-0.5 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0">
+                    <div className="bg-white shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-slate-100 min-w-[240px] overflow-hidden">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.to}
+                          to={child.to}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group/link"
+                        >
+                          <div>
+                            <div className="text-sm font-bold text-slate-900 group-hover/link:text-primary transition-colors">
+                              {child.label}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">{child.desc}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            const linkItem = item as { label: string; to: string; hash?: string };
+            const active = isActive(linkItem);
+            return (
+              <Link
+                key={linkItem.label}
+                to={linkItem.to}
+                hash={linkItem.hash as any}
+                className={`${linkClass(active)}`}
+              >
+                {linkItem.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Button variant="default" size="sm" asChild className="hidden md:inline-flex rounded-full px-6 bg-primary hover:bg-indigo-700 text-white shadow-lg shadow-primary/20">
-            <Link to="/mas-de-nosotros">Más de nosotros</Link>
-          </Button>
-
-          <button
-            className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-            onClick={() => setMobileOpen((o) => !o)}
-            aria-label="Menú"
-          >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}          </button>
-        </div>
+        <button
+          className="md:hidden p-2 text-slate-600 hover:bg-slate-100"
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label="Menú"
+        >
+          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden mt-2 mx-2 bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 p-6 space-y-2 pointer-events-auto animate-fade-up">
-          {navLinks.map((link) => (
-            <a
-              key={link.hash}
-              href={link.hash}
-              onClick={() => setMobileOpen(false)}
-              className="block py-3 px-4 text-base font-bold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-          <div className="pt-4 border-t border-slate-50">
-            <Button variant="default" size="lg" asChild className="w-full rounded-xl bg-primary text-white">
-              <Link to="/mas-de-nosotros" onClick={() => setMobileOpen(false)}>
-                Más de nosotros
+        <div className="md:hidden border-t border-slate-100 bg-white px-6 pb-6 pt-2 space-y-1 animate-fade-in">
+          {navItems.map((item) => {
+            if ("children" in item && item.children) {
+              return (
+                <div key={item.label} className="space-y-1 pt-3">
+                  <div className="px-4 py-2 text-sm font-black text-primary uppercase tracking-widest">
+                    {item.label}
+                  </div>
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.to}
+                      to={child.to}
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-3 px-4 text-base font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <div>{child.label}</div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">{child.desc}</div>
+                    </Link>
+                  ))}
+                </div>
+              );
+            }
+
+            const linkItem = item as { label: string; to: string; hash?: string };
+            const active = isActive(linkItem);
+            return (
+              <Link
+                key={linkItem.label}
+                to={linkItem.to}
+                hash={linkItem.hash as any}
+                onClick={() => setMobileOpen(false)}
+                className={`block py-3 px-4 text-base font-bold transition-colors border-l-4 ${active
+                    ? "text-violet-600 border-violet-600"
+                    : "text-slate-700 border-transparent hover:border-violet-300 hover:text-violet-600"
+                  }`}
+              >
+                {linkItem.label}
               </Link>
-            </Button>          </div>
+            );
+          })}
         </div>
       )}
     </header>

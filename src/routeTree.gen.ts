@@ -9,36 +9,42 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TarjetasRouteImport } from './routes/tarjetas'
-import { Route as QuienesSomosRouteImport } from './routes/quienes-somos'
-import { Route as PorQueElegirnosRouteImport } from './routes/por-que-elegirnos'
-import { Route as NuestrosTrabajosRouteImport } from './routes/nuestros-trabajos'
-import { Route as MasDeNosotrosRouteImport } from './routes/mas-de-nosotros'
+import { Route as TransferenciaRouteImport } from './routes/transferencia'
+import { Route as TarjetasDigitalesRouteImport } from './routes/tarjetas-digitales'
+import { Route as SolucionesWebRouteImport } from './routes/soluciones-web'
+import { Route as PagarRouteImport } from './routes/pagar'
+import { Route as NosotrosRouteImport } from './routes/nosotros'
+import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as IndexRouteImport } from './routes/index'
 
-const TarjetasRoute = TarjetasRouteImport.update({
-  id: '/tarjetas',
-  path: '/tarjetas',
+const TransferenciaRoute = TransferenciaRouteImport.update({
+  id: '/transferencia',
+  path: '/transferencia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuienesSomosRoute = QuienesSomosRouteImport.update({
-  id: '/quienes-somos',
-  path: '/quienes-somos',
+const TarjetasDigitalesRoute = TarjetasDigitalesRouteImport.update({
+  id: '/tarjetas-digitales',
+  path: '/tarjetas-digitales',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PorQueElegirnosRoute = PorQueElegirnosRouteImport.update({
-  id: '/por-que-elegirnos',
-  path: '/por-que-elegirnos',
+const SolucionesWebRoute = SolucionesWebRouteImport.update({
+  id: '/soluciones-web',
+  path: '/soluciones-web',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NuestrosTrabajosRoute = NuestrosTrabajosRouteImport.update({
-  id: '/nuestros-trabajos',
-  path: '/nuestros-trabajos',
+const PagarRoute = PagarRouteImport.update({
+  id: '/pagar',
+  path: '/pagar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MasDeNosotrosRoute = MasDeNosotrosRouteImport.update({
-  id: '/mas-de-nosotros',
-  path: '/mas-de-nosotros',
+const NosotrosRoute = NosotrosRouteImport.update({
+  id: '/nosotros',
+  path: '/nosotros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,100 +55,114 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/mas-de-nosotros': typeof MasDeNosotrosRoute
-  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
-  '/por-que-elegirnos': typeof PorQueElegirnosRoute
-  '/quienes-somos': typeof QuienesSomosRoute
-  '/tarjetas': typeof TarjetasRoute
+  '/contacto': typeof ContactoRoute
+  '/nosotros': typeof NosotrosRoute
+  '/pagar': typeof PagarRoute
+  '/soluciones-web': typeof SolucionesWebRoute
+  '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/transferencia': typeof TransferenciaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/mas-de-nosotros': typeof MasDeNosotrosRoute
-  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
-  '/por-que-elegirnos': typeof PorQueElegirnosRoute
-  '/quienes-somos': typeof QuienesSomosRoute
-  '/tarjetas': typeof TarjetasRoute
+  '/contacto': typeof ContactoRoute
+  '/nosotros': typeof NosotrosRoute
+  '/pagar': typeof PagarRoute
+  '/soluciones-web': typeof SolucionesWebRoute
+  '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/transferencia': typeof TransferenciaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/mas-de-nosotros': typeof MasDeNosotrosRoute
-  '/nuestros-trabajos': typeof NuestrosTrabajosRoute
-  '/por-que-elegirnos': typeof PorQueElegirnosRoute
-  '/quienes-somos': typeof QuienesSomosRoute
-  '/tarjetas': typeof TarjetasRoute
+  '/contacto': typeof ContactoRoute
+  '/nosotros': typeof NosotrosRoute
+  '/pagar': typeof PagarRoute
+  '/soluciones-web': typeof SolucionesWebRoute
+  '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/transferencia': typeof TransferenciaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/mas-de-nosotros'
-    | '/nuestros-trabajos'
-    | '/por-que-elegirnos'
-    | '/quienes-somos'
-    | '/tarjetas'
+    | '/contacto'
+    | '/nosotros'
+    | '/pagar'
+    | '/soluciones-web'
+    | '/tarjetas-digitales'
+    | '/transferencia'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/mas-de-nosotros'
-    | '/nuestros-trabajos'
-    | '/por-que-elegirnos'
-    | '/quienes-somos'
-    | '/tarjetas'
+    | '/contacto'
+    | '/nosotros'
+    | '/pagar'
+    | '/soluciones-web'
+    | '/tarjetas-digitales'
+    | '/transferencia'
   id:
     | '__root__'
     | '/'
-    | '/mas-de-nosotros'
-    | '/nuestros-trabajos'
-    | '/por-que-elegirnos'
-    | '/quienes-somos'
-    | '/tarjetas'
+    | '/contacto'
+    | '/nosotros'
+    | '/pagar'
+    | '/soluciones-web'
+    | '/tarjetas-digitales'
+    | '/transferencia'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MasDeNosotrosRoute: typeof MasDeNosotrosRoute
-  NuestrosTrabajosRoute: typeof NuestrosTrabajosRoute
-  PorQueElegirnosRoute: typeof PorQueElegirnosRoute
-  QuienesSomosRoute: typeof QuienesSomosRoute
-  TarjetasRoute: typeof TarjetasRoute
+  ContactoRoute: typeof ContactoRoute
+  NosotrosRoute: typeof NosotrosRoute
+  PagarRoute: typeof PagarRoute
+  SolucionesWebRoute: typeof SolucionesWebRoute
+  TarjetasDigitalesRoute: typeof TarjetasDigitalesRoute
+  TransferenciaRoute: typeof TransferenciaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tarjetas': {
-      id: '/tarjetas'
-      path: '/tarjetas'
-      fullPath: '/tarjetas'
-      preLoaderRoute: typeof TarjetasRouteImport
+    '/transferencia': {
+      id: '/transferencia'
+      path: '/transferencia'
+      fullPath: '/transferencia'
+      preLoaderRoute: typeof TransferenciaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quienes-somos': {
-      id: '/quienes-somos'
-      path: '/quienes-somos'
-      fullPath: '/quienes-somos'
-      preLoaderRoute: typeof QuienesSomosRouteImport
+    '/tarjetas-digitales': {
+      id: '/tarjetas-digitales'
+      path: '/tarjetas-digitales'
+      fullPath: '/tarjetas-digitales'
+      preLoaderRoute: typeof TarjetasDigitalesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/por-que-elegirnos': {
-      id: '/por-que-elegirnos'
-      path: '/por-que-elegirnos'
-      fullPath: '/por-que-elegirnos'
-      preLoaderRoute: typeof PorQueElegirnosRouteImport
+    '/soluciones-web': {
+      id: '/soluciones-web'
+      path: '/soluciones-web'
+      fullPath: '/soluciones-web'
+      preLoaderRoute: typeof SolucionesWebRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/nuestros-trabajos': {
-      id: '/nuestros-trabajos'
-      path: '/nuestros-trabajos'
-      fullPath: '/nuestros-trabajos'
-      preLoaderRoute: typeof NuestrosTrabajosRouteImport
+    '/pagar': {
+      id: '/pagar'
+      path: '/pagar'
+      fullPath: '/pagar'
+      preLoaderRoute: typeof PagarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mas-de-nosotros': {
-      id: '/mas-de-nosotros'
-      path: '/mas-de-nosotros'
-      fullPath: '/mas-de-nosotros'
-      preLoaderRoute: typeof MasDeNosotrosRouteImport
+    '/nosotros': {
+      id: '/nosotros'
+      path: '/nosotros'
+      fullPath: '/nosotros'
+      preLoaderRoute: typeof NosotrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -157,11 +177,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MasDeNosotrosRoute: MasDeNosotrosRoute,
-  NuestrosTrabajosRoute: NuestrosTrabajosRoute,
-  PorQueElegirnosRoute: PorQueElegirnosRoute,
-  QuienesSomosRoute: QuienesSomosRoute,
-  TarjetasRoute: TarjetasRoute,
+  ContactoRoute: ContactoRoute,
+  NosotrosRoute: NosotrosRoute,
+  PagarRoute: PagarRoute,
+  SolucionesWebRoute: SolucionesWebRoute,
+  TarjetasDigitalesRoute: TarjetasDigitalesRoute,
+  TransferenciaRoute: TransferenciaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
