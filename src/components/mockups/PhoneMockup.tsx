@@ -28,8 +28,8 @@ export function PhoneMockup() {
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-lg shadow-violet-500/30">
                   <span className="text-xs font-black text-white">C</span>
                 </div>
-                <span className="text-[10px] font-bold text-white mt-0.5">Nahuel Tisera</span>
-                <span className="text-[7px] text-slate-400 font-medium">Software Developer</span>
+                <span className="text-[10px] font-bold text-white mt-0.5">Mis XV</span>
+                <span className="text-[7px] text-slate-400 font-medium">Sede en Palermo</span>
 
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent my-1.5" />
 
