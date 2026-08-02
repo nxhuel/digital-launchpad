@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #f8f8f8;
+  --color-foreground: #0f0f0f;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f0f0f;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f0f0f;
+  --color-primary: #7c3aed;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f0ff;
+  --color-secondary-foreground: #4c1d95;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-accent: #f1f0ff;
+  --color-accent-foreground: #4c1d95;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e5e7eb;
+  --color-input: #ffffff;
+  --color-ring: #7c3aed;
+  --radius: 0.75rem;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: normal;
+}
+
+/* ── Typography tokens ── */
+.font-display {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.font-body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Page title style (matches Lovable) ── */
+.page-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.15;
+  color: #0f0f0f;
+  letter-spacing: -0.025em;
+}
+.page-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.125rem;
+}
+
+/* ── Status badge colours ── */
+.badge-pendiente  { background:#fef9c3; color:#854d0e; }
+.badge-cotizado   { background:#dbeafe; color:#1e40af; }
+.badge-aceptado   { background:#dcfce7; color:#166534; }
+.badge-desarrollo { background:#ede9fe; color:#5b21b6; }
+.badge-entregado  { background:#cffafe; color:#155e75; }
+.badge-completado { background:#d1fae5; color:#065f46; }
+.badge-rechazado  { background:#fee2e2; color:#991b1b; }
+
+/* ── Toggle switch ── */
+.toggle-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-track.on  { background: #7c3aed; }
+.toggle-track.off { background: #d1d5db; }
+.toggle-thumb {
+  position: absolute;
+  width: 1.125rem;
+  height: 1.125rem;
+  background: white;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 0.2s;
+}
+.toggle-track.on  .toggle-thumb { transform: translateX(1.25rem); }
+.toggle-track.off .toggle-thumb { transform: translateX(0.125rem); }
+
+/* ── Card base ── */
+.panel-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+/* ── Violet primary button ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.125rem;
+  background: #7c3aed;
+  color: #fff;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: #6d28d9; }
+
+/* ── Outline button ── */
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  background: transparent;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-outline:hover { background: #f9fafb; }
+
+/* ── Input base ── */
+.panel-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.625rem;
+  color: #0f0f0f;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.panel-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+/* ── Sidebar nav item active ── */
+.nav-item-active {
+  background: #f1f0ff;
+  color: #7c3aed;
+  border-left: 3px solid #7c3aed;
+}
