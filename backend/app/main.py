@@ -1,10 +1,11 @@
 import mimetypes
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend.app.core.config import settings
+from backend.app.core.config import BASE_DIR, settings
 from backend.app.core.database import engine, Base
 from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog
 
@@ -76,3 +77,30 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+# ------------------------------------------------------------------
+# Frontend estático (imagen única backend + frontend)
+# Si existe el build de Vite (frontend/dist), se sirve desde FastAPI
+# con SPA fallback: rutas desconocidas -> index.html (routing client).
+# En dev local (sin dist) o tests, esto simplemente no se activa.
+# IMPORTANTE: este catch-all va SIEMPRE al final, después de todos los
+# routers /api y de /api/health, para no interceptarlos.
+# ------------------------------------------------------------------
+FRONTEND_DIST = os.path.join(os.path.dirname(BASE_DIR), "frontend", "dist")
+if os.path.isdir(FRONTEND_DIST) and not os.getenv("TESTING"):
+    assets_dir = os.path.join(FRONTEND_DIST, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        # No interceptar la API ni los uploads
+        if full_path.split("/", 1)[0] in ("api", "uploads"):
+            raise HTTPException(status_code=404, detail="Not found")
+        candidate = os.path.join(FRONTEND_DIST, full_path)
+        real = os.path.realpath(candidate)
+        dist_root = os.path.realpath(FRONTEND_DIST)
+        # Protección contra path traversal: el archivo debe estar dentro de dist
+        if full_path and real.startswith(dist_root) and os.path.isfile(real):
+            return FileResponse(real)
+        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))

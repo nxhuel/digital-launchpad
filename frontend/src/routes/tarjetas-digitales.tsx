@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { InvitePhone } from "@/components/site/InvitePhone";
 import { InviteLaptop } from "@/components/site/InviteLaptop";
 import { InteractiveInvite } from "@/components/site/InteractiveInvite";
-import { cardCategories, cardDesigns, type CardDesign, type CardCategory } from "@/data/cards";
+import { type CardDesign, type CardCategory } from "@/data/cards";
 import { whatsappLink } from "@/config/site";
 import { apiFetch } from "@/lib/api";
 import type { CardCatalog } from "@/types";
@@ -133,10 +133,10 @@ function TarjetasCatalog() {
     }
   }, [])
 
-  const categories: CardCategory[] = serverCatalog?.categories ?? cardCategories
+  const categories: CardCategory[] = serverCatalog?.categories ?? []
 
   const designs: CardDesign[] = useMemo(() => {
-    if (!serverCatalog) return cardDesigns
+    if (!serverCatalog) return []
     return serverCatalog.designs.map(d => ({
       id: String(d.id),
       name: d.name,
@@ -231,9 +231,9 @@ function TarjetasCatalog() {
                 </div>
                 {/* Ejemplo fijo: preview en vivo de la invitación dentro del mockup de notebook */}
                 <InviteLaptop>
-                  {cardDesigns[0].demoUrl ? (
+                  {designs[0]?.demoUrl ? (
                     <iframe
-                      src={cardDesigns[0].demoUrl}
+                      src={designs[0].demoUrl}
                       className="w-full h-full border-none bg-white"
                       title="Live Demo"
                     />
