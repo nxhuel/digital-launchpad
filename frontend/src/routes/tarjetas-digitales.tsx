@@ -4,7 +4,6 @@ import { ArrowLeft, MessageCircle, Sparkles, Eye, ArrowDown, ExternalLink } from
 import { Button } from "@/components/ui/button";
 import { InvitePhone } from "@/components/site/InvitePhone";
 import { InviteLaptop } from "@/components/site/InviteLaptop";
-import { InteractiveInvite } from "@/components/site/InteractiveInvite";
 import { type CardDesign, type CardCategory } from "@/data/cards";
 import { whatsappLink } from "@/config/site";
 import { apiFetch } from "@/lib/api";
@@ -231,15 +230,11 @@ function TarjetasCatalog() {
                 </div>
                 {/* Ejemplo fijo: preview en vivo de la invitación dentro del mockup de notebook */}
                 <InviteLaptop>
-                  {designs[0]?.demoUrl ? (
-                    <iframe
-                      src={designs[0].demoUrl}
-                      className="w-full h-full border-none bg-white"
-                      title="Live Demo"
-                    />
-                  ) : (
-                    <InteractiveInvite />
-                  )}
+                  <iframe
+                    src="https://bodajyg.lovable.app/"
+                    className="w-full h-full border-none bg-white"
+                    title="Live Demo"
+                  />
                 </InviteLaptop>
               </div>
             </div>
