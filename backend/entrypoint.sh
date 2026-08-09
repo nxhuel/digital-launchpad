@@ -54,4 +54,5 @@ else:
     print('Seed data already exists')
 PYEOF
 
-exec uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+# Escucha en el puerto que configure el host (SeNode/Railway) o 8000 por defecto
+exec uvicorn backend.app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
