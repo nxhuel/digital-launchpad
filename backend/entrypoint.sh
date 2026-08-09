@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-cd /app
+# Directorio raíz del proyecto: el padre de donde vive este script (backend/)
+cd "$(dirname "$0")/.."
 
 python << 'PYEOF'
 import os
@@ -47,7 +48,7 @@ exists = db.query(User).filter(User.email == 'nahueltisera03@gmail.com').first()
 db.close()
 if not exists:
     import subprocess
-    subprocess.run(['python', '-m', 'backend.seed'], cwd='/app', check=True)
+    subprocess.run(['python', '-m', 'backend.seed'], check=True)
     print('Seed data created')
 else:
     print('Seed data already exists')
