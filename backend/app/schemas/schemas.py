@@ -286,6 +286,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[str] = Field(None, max_length=255)
     active: Optional[bool] = None
+    role: Optional[str] = Field(None, pattern="^(admin|client)$")
 
 
 # DigitalCard

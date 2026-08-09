@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://localhost:8000"
     UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024
+    # Optimización de imágenes al subir (redimensionar + convertir a WebP)
+    IMAGE_MAX_DIMENSION: int = 1600  # px, lado más largo de la imagen optimizada
+    IMAGE_QUALITY: int = 80  # calidad WebP (1-100)
     # Offset horario para fechas del libro de finanzas (Argentina UTC-3)
     TIMEZONE_OFFSET_HOURS: int = -3
 

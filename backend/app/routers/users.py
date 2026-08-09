@@ -57,10 +57,13 @@ def list_admin_users(
 
 
 @admin_router.patch("/users/{user_id}", response_model=UserOut)
-def admin_update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def admin_update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    # Un admin no puede quitarse sus propios permisos de admin
+    if user.id == current_user.id and body.role is not None and body.role != "admin":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No podés quitarte los permisos de admin a vos mismo")
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
     db.commit()

@@ -1,3 +1,4 @@
+import mimetypes
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,6 +64,10 @@ app.include_router(cards.router, prefix="/api")
 app.include_router(finances.router, prefix="/api")
 app.include_router(card_catalog.router, prefix="/api")
 app.include_router(card_catalog.public_router, prefix="/api")
+
+# Asegura que las imágenes WebP (generadas por la optimización de uploads)
+# se sirvan con su content-type correcto
+mimetypes.add_type("image/webp", ".webp")
 
 # Static files for uploads
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")

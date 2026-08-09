@@ -90,6 +90,21 @@ function UsersPage() {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, active } : u))
   }
 
+  const toggleRole = async (userId: number, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'client' : 'admin'
+    const label = newRole === 'admin' ? 'hacer admin' : 'quitar admin'
+    if (!window.confirm(`¿Seguro que querés ${label} a este usuario?`)) return
+    try {
+      await apiFetch(`/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole }),
+      })
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+    } catch {
+      alert('No se pudo cambiar el rol. Verificá que no te estés quitando tu propio admin.')
+    }
+  }
+
   const toggleExpanded = async (userId: number) => {
     setUsers(prev => prev.map(u => {
       if (u.id !== userId) return u
@@ -165,7 +180,7 @@ function UsersPage() {
                     Alta: {fmtDate(u.created_at)}
                   </p>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
                   <div className="text-center">
                     <p className="text-xs text-slate-400">Proyectos</p>
                     <p className="text-xl font-bold text-slate-900">{u.projects?.length ?? u.project_count ?? 0}</p>
@@ -174,6 +189,12 @@ function UsersPage() {
                     <span className="text-xs text-slate-500">Activa</span>
                     <Toggle on={u.active} onToggle={() => toggleActive(u.id, !u.active)} />
                   </div>
+                  <button
+                    onClick={() => toggleRole(u.id, u.role)}
+                    className={`btn-outline text-xs py-1.5 px-3 ${u.role === 'admin' ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : ''}`}
+                  >
+                    {u.role === 'admin' ? '👑 Quitar admin' : '⚡ Hacer admin'}
+                  </button>
                   <button
                     onClick={() => toggleExpanded(u.id)}
                     className="btn-outline text-xs py-1.5"
