@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://clik.com.ar/sitemap.xml

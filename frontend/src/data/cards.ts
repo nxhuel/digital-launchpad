@@ -39,6 +39,7 @@ export type CardDesign = {
   name: string;
   category: string; // slug
   tag?: CardTag;
+  discountLabel?: string;
   demoUrl?: string;
   imageUrl?: string;};
 
@@ -148,6 +149,7 @@ export const cardDesigns: CardDesign[] = [
     name: "San Valentin",
     category: "regalos",
     tag: "Nuevo",
+    discountLabel: "-20% SAN VALENTÍN",
     demoUrl: "https://love-story-scroll-76.lovable.app",
     imageUrl: sanValentinImg,
   },

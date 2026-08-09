@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { AdminStats, User } from '../../types'
-import { DollarSign, FolderKanban, Users, Clock, Plus, ChevronRight } from 'lucide-react'
+import { DollarSign, FolderKanban, Users, Clock, Plus, ChevronRight, Globe } from 'lucide-react'
+import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/dashboard')({
   component: DashboardPage,
@@ -58,8 +59,17 @@ function fmtDate(iso: string) {
 ═══════════════════════════════════════════ */
 function AdminDashboard({ stats }: { stats: AdminStats }) {
   const navigate = useNavigate()
+  const [recentPage, setRecentPage] = useState(1)
 
   const pendingQuotes = stats.recent_projects.filter(p => p.status === 'pendiente').length
+
+  const RECENT_PER_PAGE = 3
+  const recentTotalPages = Math.max(1, Math.ceil(stats.recent_projects.length / RECENT_PER_PAGE))
+  const safeRecentPage = Math.min(recentPage, recentTotalPages)
+  const recentProjects = stats.recent_projects.slice(
+    (safeRecentPage - 1) * RECENT_PER_PAGE,
+    safeRecentPage * RECENT_PER_PAGE
+  )
 
   const kpis = [
     {
@@ -112,35 +122,6 @@ function AdminDashboard({ stats }: { stats: AdminStats }) {
         ))}
       </div>
 
-      {/* Income by Service Chart */}
-      {stats.income_by_service && stats.income_by_service.length > 0 && (
-        <div className="panel-card space-y-4">
-          <h2 className="text-base font-bold text-slate-900">Ingresos por servicio (Histórico)</h2>
-          <div className="space-y-3">
-            {stats.income_by_service
-              .sort((a, b) => b.income - a.income)
-              .map(item => {
-                const maxIncome = Math.max(...stats.income_by_service.map(x => x.income));
-                const percentage = maxIncome > 0 ? (item.income / maxIncome) * 100 : 0;
-                return (
-                  <div key={item.service_name} className="flex flex-col gap-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium text-slate-700">{item.service_name}</span>
-                      <span className="font-bold text-slate-900">{fmt(item.income)}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="bg-violet-500 h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
-
       {/* Recent projects */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -157,7 +138,7 @@ function AdminDashboard({ stats }: { stats: AdminStats }) {
           {stats.recent_projects.length === 0 ? (
             <p className="text-center text-slate-400 py-12">Sin proyectos aún</p>
           ) : (
-            stats.recent_projects.map(p => (
+            recentProjects.map(p => (
               <div
                 key={p.id}
                 onClick={() => navigate({ to: `/projects/${p.id}` })}
@@ -185,7 +166,23 @@ function AdminDashboard({ stats }: { stats: AdminStats }) {
             ))
           )}
         </div>
+
+        {/* Pagination (3 por página) */}
+        {stats.recent_projects.length > RECENT_PER_PAGE && (
+          <div className="pt-5">
+            <Pagination
+              page={safeRecentPage}
+              totalPages={recentTotalPages}
+              onChange={setRecentPage}
+              pageSizeLabel={`Mostrando ${(safeRecentPage - 1) * RECENT_PER_PAGE + 1}–${Math.min(
+                safeRecentPage * RECENT_PER_PAGE,
+                stats.recent_projects.length
+              )} de ${stats.recent_projects.length} proyectos`}
+            />
+          </div>
+        )}
       </div>
+
     </div>
   )
 }
@@ -224,23 +221,25 @@ function ClientDashboard({ user }: { user: User }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Hola, {firstName} 👋</h1>
-          <p className="page-subtitle">Estos son tus proyectos.</p>
+          <p className="page-subtitle">Acá están todos tus pedidos.</p>
         </div>
+
+        {/* Un solo botón para cualquier tipo de pedido */}
         <button
           onClick={() => navigate({ to: '/projects/new' })}
           className="btn-primary shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Solicitar nuevo proyecto
+          Nuevo pedido
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Activos', value: counts.activos, highlight: counts.activos > 0 },
+          { label: 'Pedidos activos', value: counts.activos, highlight: counts.activos > 0 },
           { label: 'En cotización', value: counts.cotizados, highlight: counts.cotizados > 0 },
-          { label: 'Completados', value: counts.completados, highlight: false },
+          { label: 'Pedidos completos', value: counts.completados, highlight: false },
         ].map(c => (
           <div
             key={c.label}
@@ -252,18 +251,19 @@ function ClientDashboard({ user }: { user: User }) {
         ))}
       </div>
 
-      {/* Project list */}
+      {/* Pedidos list */}
       <div>
-        <h2 className="text-base font-bold text-slate-900 mb-4">Mis proyectos</h2>
+        <h2 className="text-base font-bold text-slate-900 mb-4">Mis pedidos</h2>
         {sorted.length === 0 ? (
-          <div className="panel-card text-center py-12">
-            <p className="text-slate-400 mb-4">No tenés proyectos todavía</p>
+          <div className="panel-card text-center py-10">
+            <Globe className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-400 mb-4 text-sm">No tenés pedidos todavía</p>
             <button
               onClick={() => navigate({ to: '/projects/new' })}
               className="btn-primary"
             >
               <Plus className="w-4 h-4" />
-              Solicitar un proyecto
+              Solicitar un pedido
             </button>
           </div>
         ) : (
@@ -302,6 +302,7 @@ function ClientDashboard({ user }: { user: User }) {
           </div>
         )}
       </div>
+
     </div>
   )
 }

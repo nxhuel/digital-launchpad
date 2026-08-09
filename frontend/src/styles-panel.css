@@ -143,6 +143,25 @@ h1, h2, h3, h4, h5 {
 }
 .btn-outline:hover { background: #f9fafb; }
 
+/* ── Secondary (violet outline) button ── */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.125rem;
+  background: #fff;
+  color: #7c3aed;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: 1.5px solid #7c3aed;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-secondary:hover { background: #f5f3ff; color: #6d28d9; }
+
 /* ── Input base ── */
 .panel-input {
   width: 100%;
@@ -161,9 +180,12 @@ h1, h2, h3, h4, h5 {
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
 }
 
-/* ── Sidebar nav item active ── */
-.nav-item-active {
-  background: #f1f0ff;
-  color: #7c3aed;
-  border-left: 3px solid #7c3aed;
+/* Input con ícono a la izquierda: deja espacio para que el texto no se superponga */
+.panel-input-icon {
+  padding-left: 2.75rem;
+}
+
+/* Input con botón de ojito a la derecha (ver contraseña) */
+.panel-input-password {
+  padding-right: 2.75rem;
 }

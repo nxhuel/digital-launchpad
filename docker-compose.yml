@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=clik
+      - POSTGRES_PASSWORD=clik
+      - POSTGRES_DB=clik
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clik -d clik"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-super-secret-key-change-in-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:80}
+      - DATABASE_URL=postgresql://clik:clik@db:5432/clik
+      - UPLOAD_DIR=/app/backend/uploads
+    volumes:
+      - upload_data:/app/backend/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pg_data:
+  upload_data:

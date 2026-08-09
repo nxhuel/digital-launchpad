@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TerminosRouteImport } from './routes/terminos'
 import { Route as TarjetasDigitalesRouteImport } from './routes/tarjetas-digitales'
 import { Route as SolucionesWebRouteImport } from './routes/soluciones-web'
+import { Route as PrivacidadRouteImport } from './routes/privacidad'
 import { Route as PagarRouteImport } from './routes/pagar'
 import { Route as NosotrosRouteImport } from './routes/nosotros'
 import { Route as LoginRouteImport } from './routes/login'
@@ -18,12 +20,19 @@ import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as panelRouteRouteImport } from './routes/(panel)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as panelUsersRouteImport } from './routes/(panel)/users'
+import { Route as panelTarjetasRouteImport } from './routes/(panel)/tarjetas'
 import { Route as panelServicesRouteImport } from './routes/(panel)/services'
 import { Route as panelProjectsRouteImport } from './routes/(panel)/projects'
+import { Route as panelFinanzasRouteImport } from './routes/(panel)/finanzas'
 import { Route as panelDashboardRouteImport } from './routes/(panel)/dashboard'
 import { Route as panelProjectsNewRouteImport } from './routes/(panel)/projects.new'
 import { Route as panelProjectsProjectIdRouteImport } from './routes/(panel)/projects.$projectId'
 
+const TerminosRoute = TerminosRouteImport.update({
+  id: '/terminos',
+  path: '/terminos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TarjetasDigitalesRoute = TarjetasDigitalesRouteImport.update({
   id: '/tarjetas-digitales',
   path: '/tarjetas-digitales',
@@ -32,6 +41,11 @@ const TarjetasDigitalesRoute = TarjetasDigitalesRouteImport.update({
 const SolucionesWebRoute = SolucionesWebRouteImport.update({
   id: '/soluciones-web',
   path: '/soluciones-web',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadRoute = PrivacidadRouteImport.update({
+  id: '/privacidad',
+  path: '/privacidad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PagarRoute = PagarRouteImport.update({
@@ -68,6 +82,11 @@ const panelUsersRoute = panelUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => panelRouteRoute,
 } as any)
+const panelTarjetasRoute = panelTarjetasRouteImport.update({
+  id: '/tarjetas',
+  path: '/tarjetas',
+  getParentRoute: () => panelRouteRoute,
+} as any)
 const panelServicesRoute = panelServicesRouteImport.update({
   id: '/services',
   path: '/services',
@@ -76,6 +95,11 @@ const panelServicesRoute = panelServicesRouteImport.update({
 const panelProjectsRoute = panelProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => panelRouteRoute,
+} as any)
+const panelFinanzasRoute = panelFinanzasRouteImport.update({
+  id: '/finanzas',
+  path: '/finanzas',
   getParentRoute: () => panelRouteRoute,
 } as any)
 const panelDashboardRoute = panelDashboardRouteImport.update({
@@ -100,11 +124,15 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/nosotros': typeof NosotrosRoute
   '/pagar': typeof PagarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/soluciones-web': typeof SolucionesWebRoute
   '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/terminos': typeof TerminosRoute
   '/dashboard': typeof panelDashboardRoute
+  '/finanzas': typeof panelFinanzasRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
+  '/tarjetas': typeof panelTarjetasRoute
   '/users': typeof panelUsersRoute
   '/projects/$projectId': typeof panelProjectsProjectIdRoute
   '/projects/new': typeof panelProjectsNewRoute
@@ -115,11 +143,15 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/nosotros': typeof NosotrosRoute
   '/pagar': typeof PagarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/soluciones-web': typeof SolucionesWebRoute
   '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/terminos': typeof TerminosRoute
   '/dashboard': typeof panelDashboardRoute
+  '/finanzas': typeof panelFinanzasRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
+  '/tarjetas': typeof panelTarjetasRoute
   '/users': typeof panelUsersRoute
   '/projects/$projectId': typeof panelProjectsProjectIdRoute
   '/projects/new': typeof panelProjectsNewRoute
@@ -132,11 +164,15 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/nosotros': typeof NosotrosRoute
   '/pagar': typeof PagarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/soluciones-web': typeof SolucionesWebRoute
   '/tarjetas-digitales': typeof TarjetasDigitalesRoute
+  '/terminos': typeof TerminosRoute
   '/(panel)/dashboard': typeof panelDashboardRoute
+  '/(panel)/finanzas': typeof panelFinanzasRoute
   '/(panel)/projects': typeof panelProjectsRouteWithChildren
   '/(panel)/services': typeof panelServicesRoute
+  '/(panel)/tarjetas': typeof panelTarjetasRoute
   '/(panel)/users': typeof panelUsersRoute
   '/(panel)/projects/$projectId': typeof panelProjectsProjectIdRoute
   '/(panel)/projects/new': typeof panelProjectsNewRoute
@@ -149,11 +185,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/nosotros'
     | '/pagar'
+    | '/privacidad'
     | '/soluciones-web'
     | '/tarjetas-digitales'
+    | '/terminos'
     | '/dashboard'
+    | '/finanzas'
     | '/projects'
     | '/services'
+    | '/tarjetas'
     | '/users'
     | '/projects/$projectId'
     | '/projects/new'
@@ -164,11 +204,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/nosotros'
     | '/pagar'
+    | '/privacidad'
     | '/soluciones-web'
     | '/tarjetas-digitales'
+    | '/terminos'
     | '/dashboard'
+    | '/finanzas'
     | '/projects'
     | '/services'
+    | '/tarjetas'
     | '/users'
     | '/projects/$projectId'
     | '/projects/new'
@@ -180,11 +224,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/nosotros'
     | '/pagar'
+    | '/privacidad'
     | '/soluciones-web'
     | '/tarjetas-digitales'
+    | '/terminos'
     | '/(panel)/dashboard'
+    | '/(panel)/finanzas'
     | '/(panel)/projects'
     | '/(panel)/services'
+    | '/(panel)/tarjetas'
     | '/(panel)/users'
     | '/(panel)/projects/$projectId'
     | '/(panel)/projects/new'
@@ -197,12 +245,21 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NosotrosRoute: typeof NosotrosRoute
   PagarRoute: typeof PagarRoute
+  PrivacidadRoute: typeof PrivacidadRoute
   SolucionesWebRoute: typeof SolucionesWebRoute
   TarjetasDigitalesRoute: typeof TarjetasDigitalesRoute
+  TerminosRoute: typeof TerminosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terminos': {
+      id: '/terminos'
+      path: '/terminos'
+      fullPath: '/terminos'
+      preLoaderRoute: typeof TerminosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tarjetas-digitales': {
       id: '/tarjetas-digitales'
       path: '/tarjetas-digitales'
@@ -215,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/soluciones-web'
       fullPath: '/soluciones-web'
       preLoaderRoute: typeof SolucionesWebRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidad': {
+      id: '/privacidad'
+      path: '/privacidad'
+      fullPath: '/privacidad'
+      preLoaderRoute: typeof PrivacidadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pagar': {
@@ -266,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof panelUsersRouteImport
       parentRoute: typeof panelRouteRoute
     }
+    '/(panel)/tarjetas': {
+      id: '/(panel)/tarjetas'
+      path: '/tarjetas'
+      fullPath: '/tarjetas'
+      preLoaderRoute: typeof panelTarjetasRouteImport
+      parentRoute: typeof panelRouteRoute
+    }
     '/(panel)/services': {
       id: '/(panel)/services'
       path: '/services'
@@ -278,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof panelProjectsRouteImport
+      parentRoute: typeof panelRouteRoute
+    }
+    '/(panel)/finanzas': {
+      id: '/(panel)/finanzas'
+      path: '/finanzas'
+      fullPath: '/finanzas'
+      preLoaderRoute: typeof panelFinanzasRouteImport
       parentRoute: typeof panelRouteRoute
     }
     '/(panel)/dashboard': {
@@ -320,15 +398,19 @@ const panelProjectsRouteWithChildren = panelProjectsRoute._addFileChildren(
 
 interface panelRouteRouteChildren {
   panelDashboardRoute: typeof panelDashboardRoute
+  panelFinanzasRoute: typeof panelFinanzasRoute
   panelProjectsRoute: typeof panelProjectsRouteWithChildren
   panelServicesRoute: typeof panelServicesRoute
+  panelTarjetasRoute: typeof panelTarjetasRoute
   panelUsersRoute: typeof panelUsersRoute
 }
 
 const panelRouteRouteChildren: panelRouteRouteChildren = {
   panelDashboardRoute: panelDashboardRoute,
+  panelFinanzasRoute: panelFinanzasRoute,
   panelProjectsRoute: panelProjectsRouteWithChildren,
   panelServicesRoute: panelServicesRoute,
+  panelTarjetasRoute: panelTarjetasRoute,
   panelUsersRoute: panelUsersRoute,
 }
 
@@ -343,8 +425,10 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NosotrosRoute: NosotrosRoute,
   PagarRoute: PagarRoute,
+  PrivacidadRoute: PrivacidadRoute,
   SolucionesWebRoute: SolucionesWebRoute,
   TarjetasDigitalesRoute: TarjetasDigitalesRoute,
+  TerminosRoute: TerminosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

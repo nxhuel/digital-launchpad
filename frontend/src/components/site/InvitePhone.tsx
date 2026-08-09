@@ -1,11 +1,10 @@
 import type { CardDesign } from "@/data/cards";
 
-type Size = "sm" | "md" | "lg";
+type Size = "sm" | "md";
 
 const sizeMap: Record<Size, string> = {
-  sm: "w-[180px]",
-  md: "w-[240px]",
-  lg: "w-[320px]",
+  sm: "w-[180px] aspect-[9/19]",
+  md: "w-[240px] aspect-[9/19]",
 };
 
 export function InvitePhone({
@@ -21,7 +20,7 @@ export function InvitePhone({
 }) {
   return (
     <div
-      className={`relative ${sizeMap[size]} aspect-[9/19] rounded-[2.2rem] bg-gradient-to-b from-zinc-800 to-black p-[5px] shadow-[0_25px_60px_-20px_rgba(0,0,0,0.7)] ring-1 ring-white/10 ${
+      className={`relative ${sizeMap[size]} rounded-[2.2rem] bg-gradient-to-b from-zinc-800 to-black p-[5px] shadow-[0_25px_60px_-20px_rgba(0,0,0,0.7)] ring-1 ring-white/10 ${
         interactive ? "transition-transform duration-500 ease-out" : ""
       }`}
     >

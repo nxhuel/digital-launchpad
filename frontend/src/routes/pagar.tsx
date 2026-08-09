@@ -3,14 +3,15 @@ import { useState, useRef } from "react";
 import {
   Check,
   Copy,
-  ExternalLink,
-  QrCode,
   Banknote,
   ArrowLeft,
   Upload,
   Loader2,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiUpload } from "../lib/api";
+import type { Attachment } from "../types";
 
 const MP_ALIAS = "ntisera0x";
 
@@ -33,11 +34,10 @@ function Pagar() {
   const cuotas = (search as any).cuotas ? Number((search as any).cuotas) : 1;
   const cuotaActual = (search as any).cuotaActual ? Number((search as any).cuotaActual) : 1;
   const montoCuota = (search as any).montoCuota ? Number((search as any).montoCuota) : 0;
-  const mpLink = (search as any).link || null;
 
   const [copied, setCopied] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [receipt, setReceipt] = useState<Attachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopy = () => {
@@ -57,10 +57,24 @@ function Pagar() {
       const payments = await res.json();
       const pending = payments.find((p: any) => p.status === 'pendiente');
       if (pending) {
-        await apiUpload(`/projects/${projectId}/payments/${pending.id}/receipt`, file);
+        const updated = await apiUpload<{ receipts?: Attachment[] }>(`/projects/${projectId}/payments/${pending.id}/receipt`, file);
+        const last = updated.receipts?.[updated.receipts.length - 1];
+        if (last) setReceipt(last);
+        toast.success('Comprobante subido. ¡Gracias!');
       }
+    } catch {
+      toast.error('No se pudo subir el comprobante. Intentá de nuevo.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const goBackAfterTransfer = () => {
+    toast.success('Estamos validando tu pago. Te avisamos cuando esté confirmado.');
+    if (projectId) {
+      navigate({ to: `/projects/${projectId}` as any, search: { transferido: true } as any });
+    } else {
+      navigate({ to: '/' as any });
     }
   };
 
@@ -74,12 +88,6 @@ function Pagar() {
 
   const amountToPay = montoCuota || (total > 0 ? Math.round(total / cuotas) : 0);
   const isMaintenance = cuotas === 0;
-
-  const paymentMethods = [
-    { id: "mercadopago", name: "Mercado Pago", icon: ExternalLink, desc: "Tarjeta, débito o efectivo", badge: "Rápido" },
-    { id: "alias", name: "Alias / Transferencia", icon: Banknote, desc: "Desde tu banco con alias" },
-    { id: "qr", name: "Código QR", icon: QrCode, desc: "Escaneá con Mercado Pago" },
-  ];
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 flex flex-col">
@@ -116,105 +124,47 @@ function Pagar() {
             )}
           </div>
 
-          {/* Payment methods grid */}
-          <div className="grid grid-cols-3 gap-3">
-            {paymentMethods.map((m) => {
-              const Icon = m.icon;
-              const isSelected = selectedMethod === m.id;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setSelectedMethod(m.id)}
-                  className={`text-left p-4 rounded-xl border-2 transition-all ${
-                    isSelected ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-                    isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-400'
-                  }`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-900">{m.name}</p>
-                  <p className="text-xs text-slate-400 mt-1">{m.desc}</p>
-                  {m.badge && (
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 mt-2 inline-block">
-                      {m.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          {/* Pago por alias (único método) */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <Banknote className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-700">Transferencia por alias</p>
+                <p className="text-xs text-slate-400">Mercado Pago · sin costo</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-5 text-center border-2 border-dashed border-slate-200">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Alias</p>
+              <p className="text-2xl font-bold text-slate-900 font-mono tracking-wide mb-3">{MP_ALIAS}</p>
+              <button onClick={handleCopy}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
+                {copied ? <><Check className="w-5 h-5" /> Copiado</> : <><Copy className="w-5 h-5" /> Copiar alias</>}
+              </button>
+            </div>
+
+            <ol className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                Tocá <strong>Copiar alias</strong> y abrí la app de tu banco.
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                Hacé una transferencia por el monto de arriba al alias copiado.
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                Adjuntá el comprobante abajo para confirmarlo más rápido.
+              </li>
+            </ol>
+
+            <button onClick={goBackAfterTransfer}
+              className="block w-full text-center text-sm text-violet-600 font-medium hover:underline py-2">
+              Ya transferí — Volver al proyecto
+            </button>
           </div>
-
-          {/* Method detail */}
-          {selectedMethod === "mercadopago" && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <ExternalLink className="w-5 h-5 text-blue-500" />
-                <span className="text-base font-semibold text-slate-700">Mercado Pago</span>
-              </div>
-              {mpLink ? (
-                <a href={mpLink} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base transition-colors">
-                  <ExternalLink className="w-5 h-5" />
-                  Ir a pagar con Mercado Pago
-                </a>
-              ) : (
-                <p className="text-sm text-slate-400 text-center py-3">El link de pago aún no fue generado.</p>
-              )}
-              <button onClick={goBack}
-                className="block w-full text-center text-sm text-violet-600 font-medium hover:underline py-2">
-                ← Volver al proyecto
-              </button>
-            </div>
-          )}
-
-          {selectedMethod === "alias" && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Banknote className="w-5 h-5 text-emerald-500" />
-                <span className="text-base font-semibold text-slate-700">Alias / Transferencia</span>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-5 text-center border-2 border-dashed border-slate-200">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Alias MP</p>
-                <p className="text-2xl font-bold text-slate-900 font-mono tracking-wide mb-3">{MP_ALIAS}</p>
-                <button onClick={handleCopy}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
-                  {copied ? <><Check className="w-5 h-5" /> Copiado</> : <><Copy className="w-5 h-5" /> Copiar alias</>}
-                </button>
-              </div>
-              <button onClick={goBack}
-                className="block w-full text-center text-sm text-violet-600 font-medium hover:underline py-2">
-                Ya transferí — Volver al proyecto
-              </button>
-            </div>
-          )}
-
-          {selectedMethod === "qr" && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-violet-500" />
-                <span className="text-base font-semibold text-slate-700">Código QR</span>
-              </div>
-              <div className="flex justify-center">
-                <div className="w-40 h-40 bg-white rounded-xl border-2 border-slate-200 flex items-center justify-center relative overflow-hidden">
-                  <div className="grid grid-cols-7 gap-0.5 w-36 h-36">
-                    {Array.from({ length: 49 }).map((_, i) => (
-                      <div key={i} className={`rounded-sm ${
-                        [0,1,2,3,4,5,6,7,8,13,14,20,21,27,28,34,35,41,42,48,47,46,45,44,43,36,29,22,15].includes(i)
-                          ? 'bg-slate-900'
-                          : [9,10,11,12,16,23,30,37,38,39,40].includes(i) ? 'bg-violet-300' : 'bg-transparent'
-                      }`} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <button onClick={goBack}
-                className="block w-full text-center text-sm text-violet-600 font-medium hover:underline py-2">
-                Ya escaneé y pagué — Volver al proyecto
-              </button>
-            </div>
-          )}
 
           {/* Upload receipt */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
@@ -242,6 +192,35 @@ function Pagar() {
             >
               {uploading ? <><Loader2 className="w-5 h-5 animate-spin" /> Subiendo...</> : <><Upload className="w-5 h-5" /> Seleccionar comprobante</>}
             </button>
+
+            {/* Preview del comprobante subido */}
+            {receipt && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
+                {receipt.mime?.startsWith('image/') ? (
+                  <img
+                    src={receipt.url}
+                    alt={receipt.filename}
+                    className="w-16 h-16 object-cover rounded-lg border border-emerald-200 shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 text-slate-400" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-700 flex items-center gap-1.5">
+                    <Check className="w-4 h-4" /> Comprobante subido
+                  </p>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">{receipt.filename}</p>
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs text-violet-600 font-medium hover:underline shrink-0"
+                >
+                  Cambiar
+                </button>
+              </div>
+            )}
           </div>
 
           <p className="text-sm text-slate-400 text-center pb-4">

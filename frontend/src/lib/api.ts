@@ -61,8 +61,18 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || `Error ${res.status}`)
+    const payload = await res.json().catch(() => null)
+    const detail = payload?.detail
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+          ? (detail[0]?.msg || `Error ${res.status}`).replace(/^Value error, /, '')
+          : detail?.message || `Error ${res.status}`
+    const error = new Error(message) as Error & { code?: string; status?: number }
+    error.code = typeof detail === 'object' && !Array.isArray(detail) ? detail?.code : undefined
+    error.status = res.status
+    throw error
   }
 
   if (res.status === 204) return undefined as T

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch, apiUpload } from '../../lib/api'
 import type { Project, User, Message, Payment, DeliveryRecord, Service } from '../../types'
@@ -16,9 +16,13 @@ import {
   Circle,
   ExternalLink,
   Download,
+  Clock,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/(panel)/projects/$projectId')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    transferido: search.transferido === true || search.transferido === 'true',
+  }),
   component: ProjectDetailPage,
 })
 
@@ -131,7 +135,9 @@ function StatusTimeline({ status }: { status: string }) {
 function ProjectDetailPage() {
   const { projectId } = useParams({ from: '/(panel)/projects/$projectId' })
   const navigate = useNavigate()
+  const search = useSearch({ from: Route.id })
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const [transferidoDismissed, setTransferidoDismissed] = useState(false)
 
   const [project, setProject] = useState<Project | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -145,7 +151,6 @@ function ProjectDetailPage() {
   // Quote form (admin)
   const [adminPrice, setAdminPrice] = useState('')
   const [installments, setInstallments] = useState(1)
-  const [mpLink, setMpLink] = useState('')
   const [internalNotes, setInternalNotes] = useState('')
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false)
   const [maintenanceMonthly, setMaintenanceMonthly] = useState('')
@@ -313,6 +318,9 @@ function ProjectDetailPage() {
   const maintenanceDaysRemaining = pendingMaintenancePayment
     ? Math.max(0, 30 - Math.ceil((now2.getTime() - new Date(pendingMaintenancePayment.created_at).getTime()) / (1000 * 60 * 60 * 24)))
     : null
+  const maintenanceDueDate = pendingMaintenancePayment
+    ? new Date(new Date(pendingMaintenancePayment.created_at).getTime() + 30 * 24 * 60 * 60 * 1000)
+    : null
 
   const methodLabels: Record<string, string> = {
     mp_link: 'Link MP',
@@ -373,79 +381,28 @@ function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* ── Timeline ── */}
-      <StatusTimeline status={project.status} />
-
-      {/* ── Client: payment cards (side by side when both exist) ── */}
-      {!isAdmin && (pendingProjectPayment || pendingMaintenancePayment) && (
-        <div className={`grid gap-5 ${pendingProjectPayment && pendingMaintenancePayment ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {pendingProjectPayment && (
-            <div className="panel-card">
-              <div className="flex flex-col items-start gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">
-                    {pendingProjectPayment.installment_number
-                      ? `Cuota ${pendingProjectPayment.installment_number}`
-                      : 'Pago del proyecto'}
-                  </p>
-                  <p className="text-lg font-bold text-slate-900 mt-1">{fmt(pendingProjectPayment.amount)}</p>
-                </div>
-                <button
-                  onClick={() => navigate({
-                    to: '/pagar',
-                    search: {
-                      projectId,
-                      proyecto: project.title,
-                      total: totalAmount,
-                      cuotas: payments.filter(x => x.kind === 'project').length,
-                      cuotaActual: pendingProjectPayment.installment_number ?? 1,
-                      montoCuota: pendingProjectPayment.amount,
-                      link: mpLink || undefined,
-                    },
-                  })}
-                  className="btn-primary py-2.5 px-6"
-                >
-                  Pagar cuota {pendingProjectPayment.installment_number ?? 1}
-                </button>
-              </div>
+      {/* ── Aviso: dijo que ya transfirió ── */}
+      {!isAdmin && search.transferido && !transferidoDismissed && (pendingProjectPayment || pendingMaintenancePayment) && (
+        <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-2.5">
+            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Estamos validando tu pago</p>
+              <p className="text-xs text-amber-600 mt-0.5">Te avisamos apenas esté confirmado. Si todavía no subiste el comprobante, podés hacerlo desde "Pagar".</p>
             </div>
-          )}
-
-          {pendingMaintenancePayment && (
-            <div className="panel-card">
-              <div className="flex flex-col items-start gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Mantenimiento mensual</p>
-                  <p className="text-lg font-bold text-slate-900 mt-1">{fmt(pendingMaintenancePayment.amount)}</p>
-                  {maintenancePaidThisMonth ? (
-                    <p className="text-xs text-emerald-600 font-medium mt-1">✓ Ya pagaste este mes</p>
-                  ) : (
-                    <p className="text-xs text-amber-600 mt-1">Quedan {maintenanceDaysRemaining} día{maintenanceDaysRemaining !== 1 ? 's' : ''} restantes para pagar</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => navigate({
-                    to: '/pagar',
-                    search: {
-                      projectId,
-                      proyecto: project.title,
-                      total: totalAmount,
-                      cuotas: 0,
-                      cuotaActual: 1,
-                      montoCuota: pendingMaintenancePayment.amount,
-                      link: mpLink || undefined,
-                    },
-                  })}
-                  disabled={maintenancePaidThisMonth}
-                  className="btn-primary py-2.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Pagar mantenimiento
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
+          <button
+            onClick={() => setTransferidoDismissed(true)}
+            className="text-amber-500 hover:text-amber-700 shrink-0 p-0.5"
+            aria-label="Cerrar aviso"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
+
+      {/* ── Timeline ── */}
+      <StatusTimeline status={project.status} />
 
       {/* ── 2-column layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -693,16 +650,6 @@ function ProjectDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Link de pago Mercado Pago</label>
-                <input
-                  value={mpLink}
-                  onChange={e => setMpLink(e.target.value)}
-                  className="panel-input"
-                  placeholder="https://mpago.la/..."
-                />
-              </div>
-
-              <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Notas internas</label>
                 <textarea
                   value={internalNotes}
@@ -789,6 +736,91 @@ function ProjectDetailPage() {
             </div>
           )}
 
+          {/* Pending payment (client): debajo de Precio cotizado, arriba del historial */}
+          {!isAdmin && (pendingProjectPayment || pendingMaintenancePayment) && (
+            <div className="space-y-4">
+              {pendingProjectPayment && (
+                <div className="panel-card">
+                  <div className="flex flex-col items-start gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {pendingProjectPayment.installment_number
+                          ? `Cuota ${pendingProjectPayment.installment_number} por pagar`
+                          : 'Pago del proyecto por pagar'}
+                      </p>
+                      <p className="text-lg font-bold text-slate-900 mt-1">{fmt(pendingProjectPayment.amount)}</p>
+                    </div>
+                    {pendingProjectPayment.receipts?.length > 0 ? (
+                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-600">
+                        <Clock className="w-4 h-4" />
+                        Estamos validando tu pago
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => navigate({
+                          to: '/pagar',
+                          search: {
+                            projectId,
+                            proyecto: project.title,
+                            total: totalAmount,
+                            cuotas: payments.filter(x => x.kind === 'project').length,
+                            cuotaActual: pendingProjectPayment.installment_number ?? 1,
+                            montoCuota: pendingProjectPayment.amount,
+                          },
+                        })}
+                        className="btn-primary py-2.5 px-6"
+                      >
+                        Pagar cuota {pendingProjectPayment.installment_number ?? 1}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {pendingMaintenancePayment && (
+                <div className="panel-card">
+                  <div className="flex flex-col items-start gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Mantenimiento mensual</p>
+                      <p className="text-lg font-bold text-slate-900 mt-1">{fmt(pendingMaintenancePayment.amount)}</p>
+                      {maintenancePaidThisMonth ? (
+                        <p className="text-xs text-emerald-600 font-medium mt-1">✓ Ya pagaste este mes</p>
+                      ) : (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Quedan {maintenanceDaysRemaining} día{maintenanceDaysRemaining !== 1 ? 's' : ''} restantes · Vence el {maintenanceDueDate ? fmtDateShort(maintenanceDueDate.toISOString()) : ''}
+                        </p>
+                      )}
+                    </div>
+                    {pendingMaintenancePayment.receipts?.length > 0 ? (
+                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-600">
+                        <Clock className="w-4 h-4" />
+                        Estamos validando tu pago
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => navigate({
+                          to: '/pagar',
+                          search: {
+                            projectId,
+                            proyecto: project.title,
+                            total: totalAmount,
+                            cuotas: 0,
+                            cuotaActual: 1,
+                            montoCuota: pendingMaintenancePayment.amount,
+                          },
+                        })}
+                        disabled={maintenancePaidThisMonth}
+                        className="btn-primary py-2.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Pagar mantenimiento
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Payments card (history only for client / admin actions) */}
           {payments.length > 0 && (
             <div className="panel-card space-y-3">
@@ -815,16 +847,18 @@ function ProjectDetailPage() {
               <div className="space-y-2.5">
                 {payments.map(p => {
                   const label = p.kind === 'maintenance' ? 'Mantenimiento' : `Cuota ${p.installment_number ?? 1}`
+                  const isPendingMaint = p.kind === 'maintenance' && p.status === 'pendiente'
+                  const maintDue = isPendingMaint ? new Date(new Date(p.created_at).getTime() + 30 * 24 * 60 * 60 * 1000) : null
                   return (
                     <div key={p.id} className="border border-slate-100 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-1.5">
                         <div>
                           <span className="text-xs text-slate-400">
-                            {fmtDateShort(p.created_at)} · {methodLabels[p.method || ''] || p.method || '—'}
+                            {maintDue ? `Vence el ${fmtDateShort(maintDue.toISOString())}` : fmtDateShort(p.created_at)} · {methodLabels[p.method || ''] || p.method || '—'}
                           </span>
                           <br />
                           <span className="text-[11px] text-slate-400">
-                            {label} · {p.status === 'confirmado' ? 'Pagado' : p.status === 'pendiente' ? 'Pendiente' : 'Rechazado'}
+                            {label} · {p.status === 'confirmado' ? 'Pagado' : p.status === 'pendiente' ? 'Pendiente de pago' : 'Rechazado'}
                           </span>
                         </div>
                         <span className="font-bold text-slate-900">{fmt(p.amount)}</span>

@@ -18,7 +18,14 @@ function NewProjectPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    apiFetch<Service[]>('/services').then(s => setServices(s.filter(s => s.active)))
+    apiFetch<Service[]>('/services').then(s => {
+      const active = s.filter(s => s.active)
+      // Tarjetas Digitales siempre primero; el resto sigue el orden del catálogo
+      setServices([
+        ...active.filter(x => x.slug === 'tarjetas-digitales'),
+        ...active.filter(x => x.slug !== 'tarjetas-digitales'),
+      ])
+    })
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,14 +61,14 @@ function NewProjectPage() {
 
       {/* Title */}
       <div>
-        <h1 className="page-title">Solicitar nuevo proyecto</h1>
-        <p className="page-subtitle">Elegí un servicio y contanos qué necesitás.</p>
+        <h1 className="page-title">Solicitar nuevo pedido</h1>
+        <p className="page-subtitle">Elegí el tipo de pedido y contanos tu idea.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Step 1: Service selection */}
         <div>
-          <h2 className="font-bold text-slate-900 text-lg mb-4">1. Elegí el servicio</h2>
+          <h2 className="font-bold text-slate-900 text-lg mb-4">1. Elegí el tipo de pedido</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {services.map(s => {
               const isSelected = selectedService === s.id
@@ -108,33 +115,37 @@ function NewProjectPage() {
           </div>
         </div>
 
-        {/* Step 2: Project details */}
+        {/* Step 2: Idea details */}
         <div>
-          <h2 className="font-bold text-slate-900 text-lg mb-4">2. Contanos sobre el proyecto</h2>
+          <h2 className="font-bold text-slate-900 text-lg mb-4">2. Contanos sobre tu idea</h2>
           <div className="panel-card space-y-5">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Nombre del proyecto
+                Nombre del pedido
               </label>
               <input
                 value={form.title}
                 onChange={e => setForm({ ...form, title: e.target.value })}
                 className="panel-input"
-                placeholder="Ej: Invitación casamiento"
+                placeholder="Ej: Invitación casamiento, Web para mi negocio, Sistema de turnos"
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Descripción detallada
+                Contanos tu idea
               </label>
               <textarea
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
                 rows={5}
                 className="panel-input resize-none"
-                placeholder="Contanos qué necesitás, fechas, cantidad de secciones, colores, etc."
+                placeholder={
+                  services.find(s => s.id === selectedService)?.slug === 'tarjetas-digitales'
+                    ? 'Contanos tu idea: de qué trata, fecha y lugar, música que te gusta, fotos, horarios, sedes...'
+                    : 'Contanos qué necesitás: de qué trata, secciones, funcionalidades, colores, referencias...'
+                }
                 required
               />
             </div>
@@ -148,7 +159,7 @@ function NewProjectPage() {
                 onChange={e => setForm({ ...form, references: e.target.value })}
                 rows={3}
                 className="panel-input resize-none"
-                placeholder="Links de referencia, inspiraciones, sitios que te gustan..."
+                placeholder="Links, fotos, inspiraciones o sitios que te gusten..."
               />
             </div>
           </div>

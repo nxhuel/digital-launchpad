@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { User, Project } from '../../types'
+import { Search } from 'lucide-react'
+import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/users')({
   component: UsersPage,
@@ -67,12 +69,18 @@ function fmtDate(iso: string) {
 function UsersPage() {
   const navigate = useNavigate()
   const [users, setUsers] = useState<ClientWithProjects[]>([])
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     apiFetch<ClientWithProjects[]>('/admin/users')
-      .then(us => setUsers(us.map(u => ({ ...u, expanded: true }))))
+      .then(us => setUsers(us.map(u => ({ ...u, expanded: false }))))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   const toggleActive = async (userId: number, active: boolean) => {
     await apiFetch(`/admin/users/${userId}`, {
@@ -107,6 +115,15 @@ function UsersPage() {
     }).catch(() => {})
   }, [users.length]) // run once when users are loaded
 
+  const PER_PAGE = 5
+  const q = search.trim().toLowerCase()
+  const filtered = users.filter(
+    u => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  )
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const pageUsers = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -115,14 +132,29 @@ function UsersPage() {
         <p className="page-subtitle">Cuentas registradas y sus proyectos.</p>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="panel-input panel-input-icon"
+          placeholder="Buscar por nombre o email..."
+        />
+      </div>
+
       {/* Client cards */}
       <div className="space-y-4">
         {users.length === 0 ? (
           <div className="panel-card text-center py-12">
             <p className="text-slate-400">No hay clientes registrados</p>
           </div>
+        ) : pageUsers.length === 0 ? (
+          <div className="panel-card text-center py-12">
+            <p className="text-slate-400">No se encontraron clientes con ese filtro</p>
+          </div>
         ) : (
-          users.map(u => (
+          pageUsers.map(u => (
             <div key={u.id} className="panel-card overflow-hidden">
               {/* Client header */}
               <div className="flex items-start justify-between gap-4">
@@ -188,6 +220,19 @@ function UsersPage() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onChange={setPage}
+          pageSizeLabel={`Mostrando ${(safePage - 1) * PER_PAGE + 1}–${Math.min(
+            safePage * PER_PAGE,
+            filtered.length
+          )} de ${filtered.length} clientes`}
+        />
+      )}
     </div>
   )
 }

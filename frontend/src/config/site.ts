@@ -7,7 +7,7 @@ export const SITE = {
   url: "https://clik.com.ar",
   email: "Clikagenciadigital.ba@gmail.com",
   whatsapp: {
-    number: "+54 11 3351-33970",
+    number: "+54 11 3351-3970",
     numberClean: "5491135133970",
     link: "https://wa.me/5491135133970",
     message: "Hola! Quiero más información sobre sus servicios.",
@@ -25,6 +25,8 @@ export const ROUTES = {
   nosotros: "/nosotros",
   contacto: "/contacto",
   pagar: "/pagar",
+  privacidad: "/privacidad",
+  terminos: "/terminos",
 } as const;
 
 export function whatsappLink(message?: string): string {

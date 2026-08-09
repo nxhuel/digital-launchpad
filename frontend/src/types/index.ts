@@ -4,6 +4,7 @@ export interface User {
   email: string
   role: 'admin' | 'client'
   active: boolean
+  email_verified: boolean
   created_at: string
 }
 
@@ -84,6 +85,15 @@ export interface Payment {
   receipts: Attachment[]
 }
 
+export interface FinanceEntry {
+  id: number
+  date: string
+  description: string
+  income: number | null
+  expense: number | null
+  created_at: string
+}
+
 export interface Notification {
   id: number
   user_id: number
@@ -95,6 +105,43 @@ export interface Notification {
   created_at: string
 }
 
+export interface CardCategoryItem {
+  id: number
+  slug: string
+  name: string
+  description: string
+  order: number
+}
+
+export interface CardDesignItem {
+  id: number
+  name: string
+  category_id: number
+  tag: string | null
+  discount_label: string | null
+  demo_url: string | null
+  image_url: string | null
+  order: number
+  active: boolean
+  category?: CardCategoryItem
+}
+
+export interface PublicCardDesign {
+  id: number
+  name: string
+  category: string
+  category_name: string
+  tag: string | null
+  discount_label: string | null
+  demo_url: string | null
+  image_url: string | null
+}
+
+export interface CardCatalog {
+  categories: CardCategoryItem[]
+  designs: PublicCardDesign[]
+}
+
 export interface AdminStats {
   total_projects: number
   active_projects: number
@@ -103,4 +150,5 @@ export interface AdminStats {
   pending_payments: number
   recent_projects: Project[]
   income_by_service: { service_name: string; income: number }[]
+  pending_cards: number
 }

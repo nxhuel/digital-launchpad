@@ -104,7 +104,12 @@ function RootComponent() {
     path.startsWith('/projects') ||
     path.startsWith('/services') ||
     path.startsWith('/users') ||
-    path.startsWith('/pagar')
+    path.startsWith('/pagar') ||
+    path.startsWith('/finanzas') ||
+    path === '/tarjetas' ||
+    path.startsWith('/tarjetas/') ||
+    path === '/privacidad' ||
+    path === '/terminos'
   const hideWhatsApp = path === '/tarjetas-digitales' || path === '/soluciones-web'
 
   if (isPanel) {

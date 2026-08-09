@@ -110,12 +110,12 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-6 py-8 border-t border-slate-50 flex flex-wrap justify-between gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
         <span>{SITE.copyright}</span>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-primary transition-colors">
+          <Link to={ROUTES.terminos} className="hover:text-primary transition-colors">
             Términos
-          </a>
-          <a href="#" className="hover:text-primary transition-colors">
+          </Link>
+          <Link to={ROUTES.privacidad} className="hover:text-primary transition-colors">
             Privacidad
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

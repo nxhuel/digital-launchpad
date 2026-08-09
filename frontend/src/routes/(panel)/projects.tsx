@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { Project, Service, User } from '../../types'
 import { Search, ChevronDown } from 'lucide-react'
+import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/projects')({
   component: ProjectsPage,
@@ -56,7 +57,12 @@ function ProjectsPage() {
   const [user, setUser] = useState<User | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
   const matchChild = useRouterState({ select: s => s.location.pathname.startsWith('/projects/') })
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, statusFilter])
 
   const loadProjects = () => apiFetch<Project[]>('/projects').then(setProjects)
 
@@ -71,9 +77,30 @@ function ProjectsPage() {
 
   const statuses = ['', 'pendiente', 'cotizado', 'aceptado', 'desarrollo', 'entregado', 'completado', 'rechazado']
 
+  const PER_PAGE = 10
+
+  // Busca por título, nombre del cliente y fechas (formato corto e ISO)
+  const searchable = (p: Project) =>
+    [
+      p.title,
+      p.client?.name ?? '',
+      p.created_at.slice(0, 10),
+      fmtDate(p.created_at),
+      p.updated_at.slice(0, 10),
+      fmtDate(p.updated_at),
+    ]
+      .join(' ')
+      .toLowerCase()
+
   const filtered = projects
-    .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => !search.trim() || searchable(p).includes(search.trim().toLowerCase()))
     .filter(p => !statusFilter || p.status === statusFilter)
+    // Admin: más nuevo arriba. Cliente: conserva el orden del backend (updated_at desc).
+    .sort((a, b) => (isAdmin ? b.created_at.localeCompare(a.created_at) : 0))
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const pageProjects = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
   if (matchChild) return <Outlet />
 
@@ -94,8 +121,8 @@ function ProjectsPage() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="panel-input pl-10"
-            placeholder="Buscar por título..."
+            className="panel-input panel-input-icon"
+            placeholder="Buscar por título, cliente o fecha..."
           />
         </div>
         <div className="relative">
@@ -120,7 +147,7 @@ function ProjectsPage() {
             <p className="text-slate-400">No se encontraron proyectos</p>
           </div>
         ) : (
-          filtered.map(p => (
+          pageProjects.map(p => (
             <div
               key={p.id}
               onClick={() => navigate({ to: `/projects/${p.id}` })}
@@ -151,6 +178,19 @@ function ProjectsPage() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onChange={setPage}
+          pageSizeLabel={`Mostrando ${(safePage - 1) * PER_PAGE + 1}–${Math.min(
+            safePage * PER_PAGE,
+            filtered.length
+          )} de ${filtered.length} proyectos`}
+        />
+      )}
     </div>
   )
 }

@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, MessageCircle, Sparkles, Eye, ArrowDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitePhone } from "@/components/site/InvitePhone";
+import { InviteLaptop } from "@/components/site/InviteLaptop";
 import { InteractiveInvite } from "@/components/site/InteractiveInvite";
-import { cardCategories, cardDesigns, type CardDesign } from "@/data/cards";
+import { cardCategories, cardDesigns, type CardDesign, type CardCategory } from "@/data/cards";
 import { whatsappLink } from "@/config/site";
+import { apiFetch } from "@/lib/api";
+import type { CardCatalog } from "@/types";
 import bgHero from "@/assets/bg-hero-2.png";
 
 export const Route = createFileRoute("/tarjetas-digitales")({
@@ -45,12 +48,23 @@ const tagStyles: Record<string, string> = {
   Minimal: "bg-zinc-900 text-white border-zinc-800 shadow-sm",
 };
 
+function DiscountRibbon({ label }: { label: string }) {
+  return (
+    <div className="absolute top-10 right-[-52px] z-30 rotate-45 w-[230px] py-1.5 text-center bg-gradient-to-r from-red-600 via-rose-500 to-fuchsia-600 text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-red-950/40 ring-1 ring-white/30 pointer-events-none">
+      {label}
+    </div>
+  )
+}
+
 function DesignCard({ design, categoryName }: { design: CardDesign; categoryName: string }) {
   const CardContent = (
     <>
+      {design.discountLabel && <DiscountRibbon label={design.discountLabel} />}
       {design.tag && (
         <span
-          className={`absolute top-3 left-3 z-20 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-lg border ${tagStyles[design.tag]}`}
+          className={`absolute top-3 left-3 z-20 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-lg border ${
+            tagStyles[design.tag] || "bg-primary text-white border-primary shadow-sm"
+          }`}
         >
           {design.tag}
         </span>
@@ -103,13 +117,44 @@ function DesignCard({ design, categoryName }: { design: CardDesign; categoryName
 }
 
 function TarjetasCatalog() {
+  const [serverCatalog, setServerCatalog] = useState<CardCatalog | null>(null)
+
+  // El catálogo real lo sube el admin desde el sistema; si la API no responde,
+  // se muestra el catálogo estático como respaldo.
+  useEffect(() => {
+    let cancelled = false
+    apiFetch<CardCatalog>("/public/card-catalog")
+      .then(data => {
+        if (!cancelled) setServerCatalog(data)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const categories: CardCategory[] = serverCatalog?.categories ?? cardCategories
+
+  const designs: CardDesign[] = useMemo(() => {
+    if (!serverCatalog) return cardDesigns
+    return serverCatalog.designs.map(d => ({
+      id: String(d.id),
+      name: d.name,
+      category: d.category,
+      tag: (d.tag as CardDesign["tag"]) || undefined,
+      discountLabel: d.discount_label || undefined,
+      demoUrl: d.demo_url || undefined,
+      imageUrl: d.image_url || undefined,
+    }))
+  }, [serverCatalog])
+
   const grouped = useMemo(
     () =>
-      cardCategories.map((c) => ({
+      categories.map((c) => ({
         category: c,
-        designs: cardDesigns.filter((d) => d.category === c.slug),
+        designs: designs.filter((d) => d.category === c.slug),
       })),
-    [],
+    [categories, designs],
   );
 
   return (
@@ -161,7 +206,7 @@ function TarjetasCatalog() {
               <div className="flex flex-wrap gap-2 animate-fade-up"
                 style={{ animationDelay: "0.2s" }}
               >
-                {cardCategories.map((c) => (
+                {categories.map((c) => (
                   <a
                     key={c.slug}
                     href={`#cat-${c.slug}`}
@@ -176,7 +221,7 @@ function TarjetasCatalog() {
             <div className="relative flex justify-center lg:justify-end animate-fade-in"
               style={{ animationDelay: "0.3s" }}
             >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/20 rounded-full blur-[100px] -z-10" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[420px] bg-primary/20 rounded-full blur-[100px] -z-10" />
               <div className="relative group transition-transform duration-700 hover:rotate-2 hover:scale-[1.02]">
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce pointer-events-none z-20">
                   <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest whitespace-nowrap bg-black/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
@@ -184,7 +229,8 @@ function TarjetasCatalog() {
                   </span>
                   <ArrowDown className="h-4 w-4 text-white/60" />
                 </div>
-                <InvitePhone design={cardDesigns[0]} size="lg">
+                {/* Ejemplo fijo: preview en vivo de la invitación dentro del mockup de notebook */}
+                <InviteLaptop>
                   {cardDesigns[0].demoUrl ? (
                     <iframe
                       src={cardDesigns[0].demoUrl}
@@ -194,7 +240,7 @@ function TarjetasCatalog() {
                   ) : (
                     <InteractiveInvite />
                   )}
-                </InvitePhone>
+                </InviteLaptop>
               </div>
             </div>
           </div>

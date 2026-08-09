@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist/**
 .output
 .vinxi
 .tanstack/**
@@ -19,6 +20,27 @@ dist-ssr
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Uploads
+uploads/
+clik.db
+test_clik.db
+
+# Panel
+panel/dist/
+panel/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Secrets / environment
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

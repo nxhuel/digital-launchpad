@@ -104,7 +104,13 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-md shadow-violet-500/25 transition-all hover:shadow-lg hover:shadow-violet-500/40 hover:-translate-y-0.5 active:translate-y-0"
+          >
+            Comenzá ahora
+          </Link>
           <button
             className="md:hidden p-2 text-slate-600 hover:bg-slate-100"
             onClick={() => setMobileOpen((o) => !o)}
@@ -116,7 +122,14 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-6 pb-6 pt-2 space-y-1 animate-fade-in">
+        <div className="md:hidden border-t border-slate-100 bg-white px-6 pb-6 pt-4 space-y-1 animate-fade-in">
+          <Link
+            to="/dashboard"
+            onClick={() => setMobileOpen(false)}
+            className="mb-3 flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 text-white text-sm font-bold px-5 py-3 rounded-full shadow-md shadow-violet-500/25 transition-all hover:shadow-lg"
+          >
+            Comenzá ahora
+          </Link>
           {navItems.map((item) => {
             if ("children" in item && item.children) {
               return (
