@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, MessageCircle, Sparkles, Eye, ArrowDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FaqAccordion, type FaqItem } from "@/components/site/Faq";
 import { InvitePhone } from "@/components/site/InvitePhone";
 import { InviteLaptop } from "@/components/site/InviteLaptop";
 import { type CardDesign, type CardCategory } from "@/data/cards";
@@ -38,6 +39,57 @@ function buildWhatsAppLink(design: CardDesign, categoryName: string) {
     `Hola! Me gustaría contratar la tarjeta digital "${design.name}" de la sección ${categoryName}.`,
   );
 }
+
+const faqItems: FaqItem[] = [
+  {
+    question: "¿Cómo es el proceso de trabajo?",
+    answer:
+      "Primero te mostramos una *demo gratis* de tu invitación. Si te gusta, abonás el *50%* para comenzar con los cambios que necesites. Cuando todo esté aprobado, pagás el *50% restante* y te entregamos tu invitación final.",
+  },
+  {
+    question: "¿Cuál es la diferencia entre los tres modelos de invitación?",
+    answer:
+      "* *Estándar:* botón de confirmación que redirige a WhatsApp. Ideal si solo querés saber quién asiste.\n* *Premium:* incluye nuestro sistema de confirmación propio, con formulario dentro de la invitación y listado en tiempo real, descargable en Excel o PDF.\n* *Premium Plus+:* invitación personalizada para cada invitado, con nombre y lugar asignado. Incluye trivia interactiva y álbum QR de fotos.",
+  },
+  {
+    question: "¿Cuál es el modelo más elegido?",
+    answer:
+      "El *Premium Plus+* es el preferido para bodas y 15 años, por su personalización y sus funciones extra (trivia y álbum de fotos QR).",
+  },
+  {
+    question: "¿Qué es el sistema de confirmación propio?",
+    answer:
+      "Es un sistema diseñado por nosotros, integrado en tu invitación con el mismo diseño y colores. Permite confirmar sin salir de la invitación y mantiene toda la información ordenada.",
+  },
+  {
+    question: "¿Cuál es la diferencia entre confirmar por WhatsApp y usar el sistema propio?",
+    answer:
+      "Por WhatsApp solo se abre una conversación, sin recopilar datos. Con el sistema propio, se completa un formulario y se registran datos como nombre, acompañantes o restricciones alimentarias.",
+  },
+  {
+    question: "¿Con cuánta anticipación tengo que enviar mi invitación?",
+    answer:
+      "Se recomienda entre *2 y 3 meses antes* del evento, aunque podés enviarla cuando prefieras.",
+  },
+  {
+    question: "¿Puedo hacer cambios en mi invitación una vez activada?",
+    answer:
+      "Sí, en cualquier momento podés modificar precios, alias, horarios o ubicaciones. Al estar ya activa, cada cambio tiene un pequeño costo adicional, y se actualiza automáticamente para todos los invitados.",
+  },
+  {
+    question: "¿Puedo elegir cualquier diseño con cualquier modelo?",
+    answer: "Sí, elegís el diseño que prefieras y lo adaptamos al modelo que quieras.",
+  },
+  {
+    question: "¿Las invitaciones pueden ser sin fotos?",
+    answer: "Sí, también ofrecemos una versión sin fotos.",
+  },
+  {
+    question: "¿Cómo funciona el 50% de descuento en el Save the Date?",
+    answer:
+      "Si pedís tu Save the Date junto con tu invitación web, obtenés un 50% de descuento. Podés reservarlo y usarlo más adelante.",
+  },
+];
 
 const tagStyles: Record<string, string> = {
   Popular: "bg-primary text-white border-primary shadow-sm",
@@ -267,6 +319,8 @@ function TarjetasCatalog() {
             </section>
           ))}
         </div>
+
+        <FaqAccordion items={faqItems} />
 
         <div className="mt-24 rounded-3xl glass p-10 md:p-14 text-center relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-fuchsia-500/10" />

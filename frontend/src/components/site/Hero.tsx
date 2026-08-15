@@ -65,7 +65,7 @@ export function Hero() {
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [phase, setPhase] = useState<"idle" | "transitioning">("idle");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
