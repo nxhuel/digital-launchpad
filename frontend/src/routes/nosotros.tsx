@@ -1,10 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Linkedin, ArrowRight, Check, Quote, Star } from "lucide-react";
+import {
+  Linkedin,
+  Instagram,
+  ArrowRight,
+  Check,
+  Quote,
+  Star,
+  ShieldCheck,
+  Scale,
+  BadgeCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE, ROUTES } from "@/config/site";
 import clikBanner from "@/assets/CLIK.jpg";
 import nosotrosEquipo from "@/assets/nosotros.png";
 import petshopWeb from "@/assets/petshop-web.png";
+import logoAtAbogadas from "@/assets/logo-at-abogadas.png";
 
 export const Route = createFileRoute("/nosotros")({
   head: () => ({
@@ -41,6 +52,77 @@ const team = [
     linkedin: "https://www.linkedin.com/in/tisera-nahuel-ab3864219/",
   },
 ];
+
+const atServices = [
+  {
+    icon: ShieldCheck,
+    title: "Protección de Marca & Registro",
+    desc: "En alianza con AT Abogadas",
+  },
+  {
+    icon: Scale,
+    title: "Propiedad Intelectual & Legales",
+    desc: "Área especializada del estudio",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Servicio de Registro de Marca",
+    desc: "En alianza con AT Abogadas",
+  },
+];
+
+function AtAbogadasCard() {
+  return (
+    <article className="lg:col-span-3 bg-white border border-slate-200 rounded-xl overflow-hidden group">
+      <div className="relative w-full bg-black">
+        <img
+          src={logoAtAbogadas}
+          alt="Logo de AT Abogadas"
+          loading="lazy"
+          className="w-full h-36 md:h-44 object-cover"
+        />
+      </div>
+      <div className="p-6 md:p-7">
+        <div className="text-[10px] font-black text-primary uppercase tracking-widest">
+          Alianza estratégica
+        </div>
+        <h3 className="text-2xl font-bold text-slate-900 leading-tight mt-1.5">AT Abogadas</h3>
+        <p className="text-sm font-semibold text-slate-500 mt-1">
+          Dra. Antonella Tisera &amp; Dra. Laura Agrelo
+        </p>
+
+        <div className="pt-5 mt-5 border-t border-slate-100">
+          <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">
+            Principales servicios legales
+          </div>
+          <div className="space-y-3">
+            {atServices.map((s) => (
+              <div key={s.title} className="flex items-start gap-3">
+                <div className="h-8 w-8 bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <s.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 leading-snug">{s.title}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{s.desc}</div>
+                </div>
+              </div>
+            ))}
+            <a
+              href="https://ig.me/m/at.abogadas"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 pt-1 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              <Instagram className="h-4 w-4" />
+              Consultar por Instagram
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 const values = [
   {
@@ -122,6 +204,57 @@ function Nosotros() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-20 md:pb-28">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid lg:grid-cols-3 gap-10 lg:gap-14 items-start">
+            <div>
+              <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
+                Nuestro equipo
+              </div>
+              <h2 className="font-display text-4xl md:text-5xl leading-tight mb-5">
+                Desarrollo técnico y <span className="italic text-primary">respaldo legal</span> para tu proyecto
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Thiago se sumó al equipo para potenciar el desarrollo y el análisis de cada
+                sistema. Y junto a <span className="font-semibold text-slate-700">AT Abogadas</span>
+                , el estudio que registró nuestra marca, acompañan tu negocio en lo legal.
+              </p>
+            </div>
+
+            <div className="lg:col-span-2 grid lg:grid-cols-5 gap-5 items-start">
+              <article className="lg:col-span-2 group">
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100 aspect-[3/4]">
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary to-indigo-600">
+                    <span className="font-display text-6xl text-white/90 select-none">TC</span>
+                    <span className="absolute -bottom-6 -right-4 font-display text-[9rem] leading-none text-white/10 select-none">
+                      TC
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                <div className="pt-4">
+                  <h3 className="text-lg font-bold text-slate-900 leading-snug">Thiago Cassera</h3>
+                  <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-1.5">
+                    Desarrollador de Software & Analista de Sistemas
+                  </div>
+                  <a
+                    href="https://www.linkedin.com/in/thiago-cassera-rodella-b06a5b2b8/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-slate-500 hover:text-primary transition-colors"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </a>
+                </div>
+              </article>
+
+              <AtAbogadasCard />
             </div>
           </div>
         </div>
