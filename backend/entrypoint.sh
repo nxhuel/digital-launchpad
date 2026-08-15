@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Directorio raíz del proyecto: el padre de donde vive este script (backend/)
+# Directorio raÃ­z del proyecto: el padre de donde vive este script (backend/)
 cd "$(dirname "$0")/.."
 
 python << 'PYEOF'
