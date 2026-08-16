@@ -6,6 +6,7 @@ import { FaqAccordion, type FaqItem } from "@/components/site/Faq";
 import { InvitePhone } from "@/components/site/InvitePhone";
 import { InviteLaptop } from "@/components/site/InviteLaptop";
 import { OrderModal, type OrderModalPrefill } from "@/components/site/OrderModal";
+import PricingCards from "@/components/site/PricingCards";
 import { type CardDesign, type CardCategory } from "@/data/cards";
 import { apiFetch } from "@/lib/api";
 import type { CardCatalog, FormQuestion } from "@/types";
@@ -361,8 +362,6 @@ function TarjetasCatalog() {
           ))}
         </div>
 
-        <FaqAccordion items={faqItems} />
-
         <div className="mt-24 rounded-3xl glass p-10 md:p-14 text-center relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-fuchsia-500/10" />
           <h3 className="font-display text-3xl md:text-4xl font-bold mb-3">
@@ -376,6 +375,10 @@ function TarjetasCatalog() {
             <MessageCircle className="h-5 w-5" /> Pedir diseño personalizado
           </Button>
         </div>
+
+        <PricingCards />
+
+        <FaqAccordion items={faqItems} />
       </div>
 
       <OrderModal
