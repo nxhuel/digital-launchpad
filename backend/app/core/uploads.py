@@ -65,7 +65,10 @@ def _optimize_image(content: bytes, mime: str) -> tuple[bytes, str] | None:
 def save_upload(file: UploadFile, uploaded_by: int) -> Attachment:
     content = file.file.read()
     if len(content) > settings.MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Archivo muy grande (máx 5 MB)")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Archivo muy grande (máx {settings.MAX_UPLOAD_SIZE // (1024 * 1024)} MB)",
+        )
     ext = os.path.splitext(file.filename or "file")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Extensión no permitida: {ext}")

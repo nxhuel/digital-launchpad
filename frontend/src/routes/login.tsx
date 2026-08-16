@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { setTokens, apiFetch } from '../lib/api'
+import { getPendingOrder, clearPendingOrder } from '../lib/pendingOrder'
 import { useEffect, useState } from 'react'
 import { Eye, EyeOff, Mail, KeyRound, ArrowLeft, RefreshCw, ShieldCheck, User, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
+import type { PendingOrder, Project } from '../types'
 import imgLogueo from '@/assets/img-logueo.png'
 
 export const Route = createFileRoute('/login')({
@@ -148,6 +150,28 @@ function LoginPage() {
     setBusy(false)
   }
 
+  // Después de autenticarse: si el usuario venía del formulario de tarjetas digitales
+  // (pedido pendiente guardado), se crea el proyecto + chat inicial y cae directo ahí.
+  // Si no, va al dashboard como siempre.
+  const goAfterAuth = async () => {
+    const pending = getPendingOrder()
+    if (!pending) {
+      navigate({ to: '/dashboard' })
+      return
+    }
+    clearPendingOrder()
+    try {
+      const project = await apiFetch<Project>('/orders/from-form', {
+        method: 'POST',
+        body: JSON.stringify(pending as PendingOrder),
+      })
+      navigate({ to: '/projects/$projectId', params: { projectId: String(project.id) } })
+    } catch {
+      // Si algo falla, no dejar al usuario en un loop: va al dashboard
+      navigate({ to: '/dashboard' })
+    }
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -158,7 +182,7 @@ function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       setTokens(data.access_token, data.refresh_token)
-      navigate({ to: '/dashboard' })
+      await goAfterAuth()
     } catch (err: any) {
       if (err.code === 'EMAIL_NOT_VERIFIED') {
         setInfo('Confirmá tu correo para poder ingresar. Te enviamos un código a tu email.')
@@ -208,7 +232,7 @@ function LoginPage() {
         body: JSON.stringify({ email, code }),
       })
       setTokens(data.access_token, data.refresh_token)
-      navigate({ to: '/dashboard' })
+      await goAfterAuth()
     } catch (err: any) {
       setError(err.message || 'Código incorrecto')
       setBusy(false)
@@ -269,7 +293,7 @@ function LoginPage() {
         body: JSON.stringify({ email, code, new_password: newPassword }),
       })
       setTokens(data.access_token, data.refresh_token)
-      navigate({ to: '/dashboard' })
+      await goAfterAuth()
     } catch (err: any) {
       setError(err.message || 'No pudimos restablecer tu contraseña')
       setBusy(false)

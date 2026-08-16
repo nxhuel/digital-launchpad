@@ -56,18 +56,23 @@ const team = [
 const atServices = [
   {
     icon: ShieldCheck,
-    title: "Protección de Marca & Registro",
-    desc: "En alianza con AT Abogadas",
+    title: "Propiedad Intelectual y Derecho de Autor",
+    desc: "n/a",
   },
   {
     icon: Scale,
-    title: "Propiedad Intelectual & Legales",
-    desc: "Área especializada del estudio",
+    title: "Protección y Registro de Marca",
+    desc: "n/a",
   },
   {
     icon: BadgeCheck,
-    title: "Servicio de Registro de Marca",
-    desc: "En alianza con AT Abogadas",
+    title: "Protección y Registro de Patentes",
+    desc: "n/a",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Redacción de Contratos",
+    desc: "n/a",
   },
 ];
 
@@ -97,18 +102,15 @@ function AtAbogadasCard() {
           </div>
           <div className="space-y-3">
             {atServices.map((s) => (
-              <div key={s.title} className="flex items-start gap-3">
-                <div className="h-8 w-8 bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <s.icon className="h-4 w-4 text-primary" />
-                </div>
+              <div key={s.title} className="flex items-start gap-1">
+                <span className="h-4 w-4 text-black font-bold">*</span>
                 <div>
                   <div className="text-sm font-bold text-slate-900 leading-snug">{s.title}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{s.desc}</div>
                 </div>
               </div>
             ))}
             <a
-              href="https://ig.me/m/at.abogadas"
+              href="https://www.instagram.com/at.abogadas/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 pt-1 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
@@ -338,7 +340,7 @@ function Nosotros() {
                       <div className="text-sm text-slate-400">Dueña de Mi Amigo Fiel</div>
                     </div>
                     <a
-                      href="https://miamigofiel.clik.com.ar/"
+                      href="https://miamigofiel.onrender.com/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors"

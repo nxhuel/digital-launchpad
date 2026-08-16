@@ -142,6 +142,38 @@ export interface CardCatalog {
   designs: PublicCardDesign[]
 }
 
+export interface FormQuestion {
+  id: number
+  role: string | null
+  field_type: string
+  text: string
+  order: number
+  active: boolean
+}
+
+export interface PendingOrderImage {
+  url: string
+  filename: string
+  mime: string
+  size: number
+}
+
+export interface PendingOrderExchange {
+  question: string
+  answer: string
+  images: PendingOrderImage[]
+}
+
+export interface PendingOrder {
+  title: string
+  description: string
+  references: string
+  design_id: number | null
+  design_name: string
+  source: 'custom' | 'template'
+  exchanges: PendingOrderExchange[]
+}
+
 export interface AdminStats {
   total_projects: number
   active_projects: number

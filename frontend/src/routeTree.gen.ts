@@ -23,6 +23,7 @@ import { Route as panelUsersRouteImport } from './routes/(panel)/users'
 import { Route as panelTarjetasRouteImport } from './routes/(panel)/tarjetas'
 import { Route as panelServicesRouteImport } from './routes/(panel)/services'
 import { Route as panelProjectsRouteImport } from './routes/(panel)/projects'
+import { Route as panelFormularioRouteImport } from './routes/(panel)/formulario'
 import { Route as panelFinanzasRouteImport } from './routes/(panel)/finanzas'
 import { Route as panelDashboardRouteImport } from './routes/(panel)/dashboard'
 import { Route as panelProjectsNewRouteImport } from './routes/(panel)/projects.new'
@@ -97,6 +98,11 @@ const panelProjectsRoute = panelProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => panelRouteRoute,
 } as any)
+const panelFormularioRoute = panelFormularioRouteImport.update({
+  id: '/formulario',
+  path: '/formulario',
+  getParentRoute: () => panelRouteRoute,
+} as any)
 const panelFinanzasRoute = panelFinanzasRouteImport.update({
   id: '/finanzas',
   path: '/finanzas',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/terminos': typeof TerminosRoute
   '/dashboard': typeof panelDashboardRoute
   '/finanzas': typeof panelFinanzasRoute
+  '/formulario': typeof panelFormularioRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
   '/tarjetas': typeof panelTarjetasRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/terminos': typeof TerminosRoute
   '/dashboard': typeof panelDashboardRoute
   '/finanzas': typeof panelFinanzasRoute
+  '/formulario': typeof panelFormularioRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
   '/tarjetas': typeof panelTarjetasRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/terminos': typeof TerminosRoute
   '/(panel)/dashboard': typeof panelDashboardRoute
   '/(panel)/finanzas': typeof panelFinanzasRoute
+  '/(panel)/formulario': typeof panelFormularioRoute
   '/(panel)/projects': typeof panelProjectsRouteWithChildren
   '/(panel)/services': typeof panelServicesRoute
   '/(panel)/tarjetas': typeof panelTarjetasRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/terminos'
     | '/dashboard'
     | '/finanzas'
+    | '/formulario'
     | '/projects'
     | '/services'
     | '/tarjetas'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/terminos'
     | '/dashboard'
     | '/finanzas'
+    | '/formulario'
     | '/projects'
     | '/services'
     | '/tarjetas'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/terminos'
     | '/(panel)/dashboard'
     | '/(panel)/finanzas'
+    | '/(panel)/formulario'
     | '/(panel)/projects'
     | '/(panel)/services'
     | '/(panel)/tarjetas'
@@ -351,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof panelProjectsRouteImport
       parentRoute: typeof panelRouteRoute
     }
+    '/(panel)/formulario': {
+      id: '/(panel)/formulario'
+      path: '/formulario'
+      fullPath: '/formulario'
+      preLoaderRoute: typeof panelFormularioRouteImport
+      parentRoute: typeof panelRouteRoute
+    }
     '/(panel)/finanzas': {
       id: '/(panel)/finanzas'
       path: '/finanzas'
@@ -399,6 +418,7 @@ const panelProjectsRouteWithChildren = panelProjectsRoute._addFileChildren(
 interface panelRouteRouteChildren {
   panelDashboardRoute: typeof panelDashboardRoute
   panelFinanzasRoute: typeof panelFinanzasRoute
+  panelFormularioRoute: typeof panelFormularioRoute
   panelProjectsRoute: typeof panelProjectsRouteWithChildren
   panelServicesRoute: typeof panelServicesRoute
   panelTarjetasRoute: typeof panelTarjetasRoute
@@ -408,6 +428,7 @@ interface panelRouteRouteChildren {
 const panelRouteRouteChildren: panelRouteRouteChildren = {
   panelDashboardRoute: panelDashboardRoute,
   panelFinanzasRoute: panelFinanzasRoute,
+  panelFormularioRoute: panelFormularioRoute,
   panelProjectsRoute: panelProjectsRouteWithChildren,
   panelServicesRoute: panelServicesRoute,
   panelTarjetasRoute: panelTarjetasRoute,

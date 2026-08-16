@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.core.config import BASE_DIR, settings
 from backend.app.core.database import engine, Base
-from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog
+from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog, form_questions, orders
 
 # Ensure db directory exists (solo SQLite necesita un directorio local)
 if settings.DATABASE_URL.startswith("sqlite"):
@@ -50,6 +50,9 @@ Base.metadata.create_all(bind=engine)
 # Seed default card categories (idempotente)
 card_catalog.seed_default_categories()
 
+# Seed default form questions (idempotente)
+form_questions.seed_default_questions()
+
 # Routers with /api prefix
 app.include_router(auth.router, prefix="/api")
 app.include_router(services.router, prefix="/api")
@@ -65,6 +68,10 @@ app.include_router(cards.router, prefix="/api")
 app.include_router(finances.router, prefix="/api")
 app.include_router(card_catalog.router, prefix="/api")
 app.include_router(card_catalog.public_router, prefix="/api")
+app.include_router(form_questions.router, prefix="/api")
+app.include_router(form_questions.public_router, prefix="/api")
+app.include_router(orders.router, prefix="/api")
+app.include_router(orders.public_router, prefix="/api")
 
 # Asegura que las imágenes WebP (generadas por la optimización de uploads)
 # se sirvan con su content-type correcto

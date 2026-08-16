@@ -1,6 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
+
+
+class UTCBaseModel(BaseModel):
+    """Serializa las fechas guardadas como UTC (sin zona horaria) marcándolas como UTC.
+
+    La base de datos guarda datetimes con `datetime.now(timezone.utc)` pero en columnas
+    sin timezone, así que al leerlos vuelven "naive". Sin esta marca, el navegador los
+    interpreta como hora local y muestra horarios corridos (ej. +3h en Argentina).
+    """
+    @field_serializer("*", when_used="json")
+    def _mark_naive_datetimes_as_utc(self, value, _info):
+        if isinstance(value, datetime) and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 # Auth
@@ -14,7 +28,7 @@ def _require_uppercase(v: str) -> str:
     return v
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(UTCBaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: str = Field(..., max_length=255)
     password: str = Field(..., min_length=8, max_length=128)
@@ -33,25 +47,25 @@ class RegisterRequest(BaseModel):
         return _require_uppercase(v)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(UTCBaseModel):
     email: str = Field(..., max_length=255)
     password: str = Field(..., max_length=128)
 
 
-class VerifyEmailRequest(BaseModel):
+class VerifyEmailRequest(UTCBaseModel):
     email: str = Field(..., max_length=255)
     code: str = Field(..., min_length=6, max_length=6)
 
 
-class ResendVerificationRequest(BaseModel):
+class ResendVerificationRequest(UTCBaseModel):
     email: str = Field(..., max_length=255)
 
 
-class ForgotPasswordRequest(BaseModel):
+class ForgotPasswordRequest(UTCBaseModel):
     email: str = Field(..., max_length=255)
 
 
-class ResetPasswordRequest(BaseModel):
+class ResetPasswordRequest(UTCBaseModel):
     email: str = Field(..., max_length=255)
     code: str = Field(..., min_length=6, max_length=6)
     new_password: str = Field(..., min_length=8, max_length=128)
@@ -62,21 +76,21 @@ class ResetPasswordRequest(BaseModel):
         return _require_uppercase(v)
 
 
-class MessageResponse(BaseModel):
+class MessageResponse(UTCBaseModel):
     message: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(UTCBaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
 
-class RefreshRequest(BaseModel):
+class RefreshRequest(UTCBaseModel):
     refresh_token: str
 
 
-class UserOut(BaseModel):
+class UserOut(UTCBaseModel):
     id: int
     name: str
     email: str
@@ -89,7 +103,7 @@ class UserOut(BaseModel):
 
 
 # Service
-class ServiceCreate(BaseModel):
+class ServiceCreate(UTCBaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     slug: str = Field(..., min_length=1, max_length=255)
     description: str = ""
@@ -101,7 +115,7 @@ class ServiceCreate(BaseModel):
     supports_maintenance: bool = False
 
 
-class ServiceUpdate(BaseModel):
+class ServiceUpdate(UTCBaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     slug: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
@@ -113,7 +127,7 @@ class ServiceUpdate(BaseModel):
     supports_maintenance: Optional[bool] = None
 
 
-class ServiceOut(BaseModel):
+class ServiceOut(UTCBaseModel):
     id: int
     name: str
     slug: str
@@ -129,14 +143,14 @@ class ServiceOut(BaseModel):
 
 
 # Project
-class ProjectCreate(BaseModel):
+class ProjectCreate(UTCBaseModel):
     service_id: int = Field(..., gt=0)
     title: str = Field(..., min_length=1, max_length=255)
     description: str = ""
     budget_hint: Optional[int] = Field(None, gt=0)
 
 
-class ProjectUpdate(BaseModel):
+class ProjectUpdate(UTCBaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     status: Optional[str] = None
@@ -146,7 +160,7 @@ class ProjectUpdate(BaseModel):
     maintenance_monthly: Optional[int] = Field(None, ge=0)
 
 
-class ProjectOut(BaseModel):
+class ProjectOut(UTCBaseModel):
     id: int
     client_id: int
     service_id: int
@@ -169,11 +183,11 @@ class ProjectOut(BaseModel):
 
 
 # Message
-class MessageCreate(BaseModel):
+class MessageCreate(UTCBaseModel):
     body: str = Field(..., min_length=1, max_length=10000)
 
 
-class MessageOut(BaseModel):
+class MessageOut(UTCBaseModel):
     id: int
     project_id: int
     sender_id: int
@@ -186,7 +200,7 @@ class MessageOut(BaseModel):
 
 
 # Attachment
-class AttachmentOut(BaseModel):
+class AttachmentOut(UTCBaseModel):
     id: int
     owner_type: str
     owner_id: int
@@ -201,18 +215,18 @@ class AttachmentOut(BaseModel):
 
 
 # DeliveryRecord
-class DeliveryCreate(BaseModel):
+class DeliveryCreate(UTCBaseModel):
     note: str = Field(..., min_length=1, max_length=10000)
     link: Optional[str] = Field(None, max_length=500)
     attachment_ids: List[int] = []
 
 
-class DeliveryUpdate(BaseModel):
+class DeliveryUpdate(UTCBaseModel):
     note: Optional[str] = Field(None, min_length=1, max_length=10000)
     link: Optional[str] = Field(None, max_length=500)
 
 
-class DeliveryOut(BaseModel):
+class DeliveryOut(UTCBaseModel):
     id: int
     project_id: int
     note: str
@@ -225,7 +239,7 @@ class DeliveryOut(BaseModel):
 
 
 # Payment
-class PaymentOut(BaseModel):
+class PaymentOut(UTCBaseModel):
     id: int
     project_id: int
     amount: int
@@ -240,16 +254,16 @@ class PaymentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PaymentConfirm(BaseModel):
+class PaymentConfirm(UTCBaseModel):
     status: str = Field(..., pattern="^(confirmado|rechazado)$")
 
 
-class PaymentMethodUpdate(BaseModel):
+class PaymentMethodUpdate(UTCBaseModel):
     method: str = Field(..., pattern="^(mp_link|alias|qr|otro)$")
 
 
 # Notification
-class NotificationOut(BaseModel):
+class NotificationOut(UTCBaseModel):
     id: int
     user_id: int
     kind: str
@@ -262,15 +276,15 @@ class NotificationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class NotificationReadAllResponse(BaseModel):
+class NotificationReadAllResponse(UTCBaseModel):
     success: bool
 
 
-class IncomeByService(BaseModel):
+class IncomeByService(UTCBaseModel):
     service_name: str
     income: int
 
-class AdminStats(BaseModel):
+class AdminStats(UTCBaseModel):
     total_projects: int
     active_projects: int
     total_clients: int
@@ -282,7 +296,7 @@ class AdminStats(BaseModel):
     recent_cards: List["CardOut"] = []
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(UTCBaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[str] = Field(None, max_length=255)
     active: Optional[bool] = None
@@ -290,7 +304,7 @@ class UserUpdate(BaseModel):
 
 
 # DigitalCard
-class CardCreate(BaseModel):
+class CardCreate(UTCBaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     event_type: str = Field(...)
     event_date: Optional[str] = Field(None, max_length=50)
@@ -298,7 +312,7 @@ class CardCreate(BaseModel):
     description: str = ""
 
 
-class CardUpdate(BaseModel):
+class CardUpdate(UTCBaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     event_type: Optional[str] = None
     event_date: Optional[str] = Field(None, max_length=50)
@@ -309,7 +323,7 @@ class CardUpdate(BaseModel):
     link_entrega: Optional[str] = Field(None, max_length=500)
 
 
-class CardOut(BaseModel):
+class CardOut(UTCBaseModel):
     id: int
     client_id: int
     title: str
@@ -327,11 +341,11 @@ class CardOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class CardMessageCreate(BaseModel):
+class CardMessageCreate(UTCBaseModel):
     body: str = Field(..., min_length=1, max_length=10000)
 
 
-class CardMessageOut(BaseModel):
+class CardMessageOut(UTCBaseModel):
     id: int
     card_id: int
     sender_id: int
@@ -343,21 +357,21 @@ class CardMessageOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class FinanceEntryCreate(BaseModel):
+class FinanceEntryCreate(UTCBaseModel):
     date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     description: str = Field(..., min_length=1, max_length=255)
     income: Optional[int] = Field(None, ge=0)
     expense: Optional[int] = Field(None, ge=0)
 
 
-class FinanceEntryUpdate(BaseModel):
+class FinanceEntryUpdate(UTCBaseModel):
     date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     description: Optional[str] = Field(None, min_length=1, max_length=255)
     income: Optional[int] = Field(None, ge=0)
     expense: Optional[int] = Field(None, ge=0)
 
 
-class FinanceEntryOut(BaseModel):
+class FinanceEntryOut(UTCBaseModel):
     id: int
     date: str
     description: str
@@ -369,18 +383,18 @@ class FinanceEntryOut(BaseModel):
 
 
 # Card catalog (tarjetas reales subidas por el sistema)
-class CardCategoryCreate(BaseModel):
+class CardCategoryCreate(UTCBaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     slug: Optional[str] = Field(None, max_length=100)
     description: str = ""
     order: int = 0
 
 
-class ReorderRequest(BaseModel):
+class ReorderRequest(UTCBaseModel):
     order: List[int] = Field(..., min_length=1)
 
 
-class CardCategoryOut(BaseModel):
+class CardCategoryOut(UTCBaseModel):
     id: int
     slug: str
     name: str
@@ -390,7 +404,7 @@ class CardCategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class CardDesignCreate(BaseModel):
+class CardDesignCreate(UTCBaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     category_id: int = Field(..., gt=0)
     tag: Optional[str] = Field(None, max_length=50)
@@ -401,7 +415,7 @@ class CardDesignCreate(BaseModel):
     active: bool = True
 
 
-class CardDesignUpdate(BaseModel):
+class CardDesignUpdate(UTCBaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     category_id: Optional[int] = Field(None, gt=0)
     tag: Optional[str] = Field(None, max_length=50)
@@ -412,7 +426,7 @@ class CardDesignUpdate(BaseModel):
     active: Optional[bool] = None
 
 
-class CardDesignOut(BaseModel):
+class CardDesignOut(UTCBaseModel):
     id: int
     name: str
     category_id: int
@@ -429,7 +443,7 @@ class CardDesignOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PublicCardDesignOut(BaseModel):
+class PublicCardDesignOut(UTCBaseModel):
     id: int
     name: str
     category: str  # slug
@@ -440,6 +454,67 @@ class PublicCardDesignOut(BaseModel):
     image_url: Optional[str]
 
 
-class PublicCardCatalog(BaseModel):
+class PublicCardCatalog(UTCBaseModel):
     categories: List[CardCategoryOut]
     designs: List[PublicCardDesignOut]
+
+
+# Form questions (formulario de pedido de tarjetas digitales)
+class FormQuestionOut(UTCBaseModel):
+    id: int
+    role: Optional[str]
+    field_type: str
+    text: str
+    order: int
+    active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class FormQuestionCreate(UTCBaseModel):
+    text: str = Field(..., min_length=1, max_length=1000)
+    field_type: str = Field(..., pattern="^(text|longtext|url|images)$")
+    order: int = 0
+    active: bool = True
+
+
+class FormQuestionUpdate(UTCBaseModel):
+    text: Optional[str] = Field(None, min_length=1, max_length=1000)
+    field_type: Optional[str] = Field(None, pattern="^(text|longtext|url|images)$")
+    order: Optional[int] = None
+    active: Optional[bool] = None
+
+
+# Flujo de autoatención de pedidos (formulario → proyecto + chat inicial)
+class OrderImageItem(UTCBaseModel):
+    url: str = Field(..., min_length=1, max_length=500)
+    filename: str = ""
+    mime: str = ""
+    size: int = 0
+
+
+class OrderExchangeItem(UTCBaseModel):
+    """Una pregunta del formulario (fuera de título/descripción/referencia) y su respuesta.
+
+    Se vuelca al chat inicial: el equipo hace la pregunta y el cliente responde (texto o imágenes).
+    """
+    question: str = Field(..., min_length=1, max_length=1000)
+    answer: str = Field("", max_length=10000)
+    images: List[OrderImageItem] = []
+
+
+class OrderProjectCreate(UTCBaseModel):
+    title: str = Field("", max_length=255)
+    description: str = Field("", max_length=10000)
+    references: str = Field("", max_length=5000)
+    design_id: Optional[int] = None
+    design_name: str = Field("", max_length=255)
+    source: str = Field("custom", pattern="^(custom|template)$")
+    exchanges: List[OrderExchangeItem] = []
+
+
+class UploadedFileOut(UTCBaseModel):
+    url: str
+    filename: str
+    mime: str
+    size: int

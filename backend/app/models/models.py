@@ -83,6 +83,22 @@ class AuthCodePurpose(str, enum.Enum):
     password_reset = "password_reset"
 
 
+class FormQuestionRole(str, enum.Enum):
+    """Roles fijos que alimentan el autocompletado del proyecto y el chat inicial."""
+    title = "title"
+    description = "description"
+    reference = "reference"
+    detail = "detail"
+    images = "images"
+
+
+class FormQuestionFieldType(str, enum.Enum):
+    text = "text"
+    longtext = "longtext"
+    url = "url"
+    images = "images"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -295,6 +311,25 @@ class CardMessage(Base):
     card = relationship("DigitalCard", back_populates="messages")
     sender = relationship("User")
     attachments = relationship("Attachment", primaryjoin="and_(Attachment.owner_type=='card_message', Attachment.owner_id==CardMessage.id)", foreign_keys="Attachment.owner_id", cascade="all, delete-orphan", overlaps="attachments")
+
+
+class FormQuestion(Base):
+    """Pregunta del formulario de pedido de tarjetas digitales (configurable por admin).
+
+    Las 5 preguntas por defecto tienen un rol fijo (title/description/reference/detail/images)
+    que alimenta el autocompletado del proyecto y el chat inicial; el admin puede editar su
+    texto, ocultarlas y reordenarlas. Las preguntas personalizadas creadas por el admin no
+    tienen rol y se muestran en el modal con su field_type elegido.
+    """
+    __tablename__ = "form_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    role = Column(SAEnum(FormQuestionRole), nullable=True)  # None = pregunta personalizada
+    field_type = Column(SAEnum(FormQuestionFieldType), nullable=False, default=FormQuestionFieldType.text)
+    text = Column(Text, nullable=False)
+    order = Column(Integer, default=0, nullable=False)
+    active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class AuthCode(Base):

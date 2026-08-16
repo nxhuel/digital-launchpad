@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { FaqAccordion, type FaqItem } from "@/components/site/Faq";
 import { InvitePhone } from "@/components/site/InvitePhone";
 import { InviteLaptop } from "@/components/site/InviteLaptop";
+import { OrderModal, type OrderModalPrefill } from "@/components/site/OrderModal";
 import { type CardDesign, type CardCategory } from "@/data/cards";
-import { whatsappLink } from "@/config/site";
 import { apiFetch } from "@/lib/api";
-import type { CardCatalog } from "@/types";
+import type { CardCatalog, FormQuestion } from "@/types";
 import bgHero from "@/assets/bg-hero-2.png";
 
 export const Route = createFileRoute("/tarjetas-digitales")({
@@ -33,12 +33,6 @@ export const Route = createFileRoute("/tarjetas-digitales")({
   }),
   component: TarjetasCatalog,
 });
-
-function buildWhatsAppLink(design: CardDesign, categoryName: string) {
-  return whatsappLink(
-    `Hola! Me gustaría contratar la tarjeta digital "${design.name}" de la sección ${categoryName}.`,
-  );
-}
 
 const faqItems: FaqItem[] = [
   {
@@ -107,7 +101,15 @@ function DiscountRibbon({ label }: { label: string }) {
   )
 }
 
-function DesignCard({ design, categoryName }: { design: CardDesign; categoryName: string }) {
+function DesignCard({
+  design,
+  categoryName,
+  onContract,
+}: {
+  design: CardDesign;
+  categoryName: string;
+  onContract: (design: CardDesign, categoryName: string) => void;
+}) {
   const CardContent = (
     <>
       {design.discountLabel && <DiscountRibbon label={design.discountLabel} />}
@@ -149,10 +151,8 @@ function DesignCard({ design, categoryName }: { design: CardDesign; categoryName
       )}
       <div className="p-5 border-t border-white/5 flex flex-col gap-3 bg-card/40">
         <div className="flex gap-2">
-          <Button variant="hero" size="sm" asChild className="flex-1">
-            <a href={buildWhatsAppLink(design, categoryName)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="h-4 w-4" /> Contratar
-            </a>
+          <Button variant="hero" size="sm" className="flex-1" onClick={() => onContract(design, categoryName)}>
+            <MessageCircle className="h-4 w-4" /> Contratar
           </Button>
           {design.demoUrl && (
             <Button variant="outline" size="sm" asChild>
@@ -169,6 +169,18 @@ function DesignCard({ design, categoryName }: { design: CardDesign; categoryName
 
 function TarjetasCatalog() {
   const [serverCatalog, setServerCatalog] = useState<CardCatalog | null>(null)
+  const [questions, setQuestions] = useState<FormQuestion[]>([])
+
+  // Modal del formulario de pedido
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalPrefill, setModalPrefill] = useState<OrderModalPrefill | null>(null)
+  const [modalDesign, setModalDesign] = useState<{
+    id: number
+    name: string
+    category_name?: string
+    demo_url?: string
+  } | null>(null)
+  const [modalSource, setModalSource] = useState<'custom' | 'template'>('custom')
 
   // El catálogo real lo sube el admin desde el sistema; si la API no responde,
   // se muestra el catálogo estático como respaldo.
@@ -179,10 +191,39 @@ function TarjetasCatalog() {
         if (!cancelled) setServerCatalog(data)
       })
       .catch(() => {})
+    // Preguntas del formulario de pedido (configurables por admin)
+    apiFetch<FormQuestion[]>("/public/form-questions")
+      .then(data => {
+        if (!cancelled) setQuestions(data)
+      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
   }, [])
+
+  const openCustom = () => {
+    setModalPrefill(null)
+    setModalDesign(null)
+    setModalSource('custom')
+    setModalOpen(true)
+  }
+
+  const openTemplate = (design: CardDesign, categoryName: string) => {
+    setModalPrefill({
+      title: design.name,
+      description: `Quiero una invitación similar a la tarjeta "${design.name}"${categoryName ? ` de la categoría ${categoryName}` : ''}.`,
+      reference: design.demoUrl || '',
+    })
+    setModalDesign({
+      id: Number(design.id),
+      name: design.name,
+      category_name: categoryName,
+      demo_url: design.demoUrl,
+    })
+    setModalSource('template')
+    setModalOpen(true)
+  }
 
   const categories: CardCategory[] = serverCatalog?.categories ?? []
 
@@ -313,7 +354,7 @@ function TarjetasCatalog() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {designs.map((d) => (
-                  <DesignCard key={d.id} design={d} categoryName={category.name} />
+                  <DesignCard key={d.id} design={d} categoryName={category.name} onContract={openTemplate} />
                 ))}
               </div>
             </section>
@@ -331,17 +372,20 @@ function TarjetasCatalog() {
             Hacemos diseños 100% personalizados según tu estilo, colores y temática. Contanos cómo
             lo imaginás.
           </p>
-          <Button variant="hero" size="xl" asChild>
-            <a
-              href={whatsappLink("Hola! Me gustaría una tarjeta digital personalizada.")}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MessageCircle className="h-5 w-5" /> Pedir diseño personalizado
-            </a>
+          <Button variant="hero" size="xl" onClick={openCustom}>
+            <MessageCircle className="h-5 w-5" /> Pedir diseño personalizado
           </Button>
         </div>
       </div>
+
+      <OrderModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        questions={questions}
+        prefill={modalPrefill}
+        design={modalDesign}
+        source={modalSource}
+      />
     </main>
   );
 }
