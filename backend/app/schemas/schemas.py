@@ -156,6 +156,7 @@ class ProjectUpdate(UTCBaseModel):
     status: Optional[str] = None
     admin_price: Optional[int] = Field(None, ge=0)
     installments: Optional[int] = Field(None, ge=1, le=24)
+    deposit_percentage: Optional[int] = Field(None, ge=0, le=50)
     maintenance_enabled: Optional[bool] = None
     maintenance_monthly: Optional[int] = Field(None, ge=0)
 
@@ -170,6 +171,7 @@ class ProjectOut(UTCBaseModel):
     status: str
     admin_price: Optional[int]
     installments: int
+    deposit_percentage: Optional[int] = None
     maintenance_enabled: bool
     maintenance_monthly: Optional[int]
     accepted_at: Optional[datetime]
@@ -518,3 +520,37 @@ class UploadedFileOut(UTCBaseModel):
     filename: str
     mime: str
     size: int
+
+
+# --- Portfolio ---
+
+class PortfolioItemOut(UTCBaseModel):
+    id: int
+    title: str
+    category: str
+    site_url: str
+    image_url: Optional[str] = None
+    order: int
+    active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PortfolioItemCreate(UTCBaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    category: str = Field(..., min_length=1, max_length=100)
+    site_url: str = Field(..., min_length=1, max_length=500)
+    image_url: Optional[str] = Field(None, max_length=500)
+    order: int = 0
+    active: bool = True
+
+
+class PortfolioItemUpdate(UTCBaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    category: Optional[str] = Field(None, min_length=1, max_length=100)
+    site_url: Optional[str] = Field(None, min_length=1, max_length=500)
+    image_url: Optional[str] = Field(None, max_length=500)
+    order: Optional[int] = None
+    active: Optional[bool] = None

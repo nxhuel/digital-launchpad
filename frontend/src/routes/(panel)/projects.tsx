@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Outlet, useRouterState } from '@tanstack/
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { Project, Service, User } from '../../types'
-import { Search, ChevronDown } from 'lucide-react'
+import { Search, ChevronDown, Trash2 } from 'lucide-react'
 import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/projects')({
@@ -102,6 +102,17 @@ function ProjectsPage() {
   const safePage = Math.min(page, totalPages)
   const pageProjects = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
+  const deleteProject = async (projectId: number, title: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!window.confirm(`¿Eliminar el proyecto "${title}"? Esta acción no se puede deshacer.`)) return
+    try {
+      await apiFetch(`/projects/${projectId}`, { method: 'DELETE' })
+      setProjects(prev => prev.filter(p => p.id !== projectId))
+    } catch {
+      alert('No se pudo eliminar el proyecto.')
+    }
+  }
+
   if (matchChild) return <Outlet />
 
   return (
@@ -167,12 +178,23 @@ function ProjectsPage() {
                     {fmtDate(p.updated_at)}
                   </p>
                 </div>
-                {p.admin_price != null && (
-                  <div className="text-right shrink-0">
-                    <p className="text-[11px] text-slate-400">Precio</p>
-                    <p className="font-bold text-slate-900">{fmt(p.admin_price)}</p>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {p.admin_price != null && (
+                    <div className="text-right">
+                      <p className="text-[11px] text-slate-400">Precio</p>
+                      <p className="font-bold text-slate-900">{fmt(p.admin_price)}</p>
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => deleteProject(p.id, p.title, e)}
+                      className="btn-outline text-xs py-1.5 px-2 text-red-500 border-red-200 hover:bg-red-50"
+                      title="Eliminar proyecto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))

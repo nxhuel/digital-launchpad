@@ -180,6 +180,7 @@ function ProjectDetailPage() {
   // Quote form (admin)
   const [adminPrice, setAdminPrice] = useState('')
   const [installments, setInstallments] = useState(1)
+  const [depositPercentage, setDepositPercentage] = useState<number | ''>('')
   const [internalNotes, setInternalNotes] = useState('')
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false)
   const [maintenanceMonthly, setMaintenanceMonthly] = useState('')
@@ -199,6 +200,7 @@ function ProjectDetailPage() {
       setProject(p)
       setAdminPrice(p.admin_price?.toString() || '')
       setInstallments(p.installments || 1)
+      setDepositPercentage(p.deposit_percentage ?? '')
       setMaintenanceEnabled(p.maintenance_enabled || false)
       setMaintenanceMonthly(p.maintenance_monthly?.toString() || '')
     })
@@ -273,6 +275,7 @@ function ProjectDetailPage() {
         body: JSON.stringify({
           admin_price: price,
           installments: installments,
+          deposit_percentage: depositPercentage === '' ? null : Number(depositPercentage),
           maintenance_enabled: maintenanceEnabled,
           maintenance_monthly: maintenanceEnabled ? monthly : null,
           status: project.status === 'pendiente' ? 'cotizado' : project.status,
@@ -440,9 +443,9 @@ function ProjectDetailPage() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Description */}
-          <div className="panel-card">
+          <div className="panel-card overflow-hidden">
             <h3 className="text-sm font-bold text-slate-700 mb-3">Descripción del cliente</h3>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{project.description}</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap break-all overflow-hidden">{project.description}</p>
           </div>
 
           {/* Chat */}
@@ -657,26 +660,62 @@ function ProjectDetailPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Cuotas</label>
-                <div className="relative">
-                  <select
-                    value={installments}
-                    onChange={e => setInstallments(Number(e.target.value))}
-                    className="panel-input appearance-none pr-8 cursor-pointer"
-                  >
-                    {[1,2,3,4,5,6,8,10,12].map(n => (
-                      <option key={n} value={n}>{n} {n === 1 ? 'cuota' : 'cuotas'}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              {/* Señado + Cuotas en la misma fila */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Señado</label>
+                  <div className="relative">
+                    <select
+                      value={depositPercentage}
+                      onChange={e => setDepositPercentage(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="panel-input appearance-none pr-8 cursor-pointer text-sm"
+                    >
+                      <option value="">Sin seña</option>
+                      <option value={25}>25%</option>
+                      <option value={50}>50%</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
-                {adminPrice && installments > 1 && (
-                  <p className="text-xs text-slate-400 mt-1">
-                    {installments} × {fmt(Math.round(Number(adminPrice) / installments))}
-                  </p>
-                )}
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Cuotas</label>
+                  <div className="relative">
+                    <select
+                      value={installments}
+                      onChange={e => setInstallments(Number(e.target.value))}
+                      className="panel-input appearance-none pr-8 cursor-pointer text-sm"
+                    >
+                      {[1,2,3,4,5,6,8,10,12].map(n => (
+                        <option key={n} value={n}>{n} {n === 1 ? 'cuota' : 'cuotas'}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
+              {/* Resumen de pagos */}
+              {adminPrice && Number(adminPrice) > 0 && (
+                <div className="bg-slate-50 rounded-xl p-2.5 text-xs space-y-0.5">
+                  {depositPercentage !== '' && (
+                    <p className="text-violet-600 font-medium">
+                      Seña ({depositPercentage}%): {fmt(Math.round(Number(adminPrice) * Number(depositPercentage) / 100))}
+                    </p>
+                  )}
+                  {(() => {
+                    const dep = depositPercentage !== '' ? Math.round(Number(adminPrice) * Number(depositPercentage) / 100) : 0
+                    const remaining = Number(adminPrice) - dep
+                    if (remaining <= 0) return null
+                    if (installments === 1) {
+                      return <p className="text-slate-500">Saldo: {fmt(remaining)} (pago único)</p>
+                    }
+                    return (
+                      <p className="text-slate-500">
+                        Saldo: {fmt(remaining)} → {installments} × {fmt(Math.round(remaining / installments))}
+                      </p>
+                    )
+                  })()}
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Notas internas</label>
@@ -733,11 +772,28 @@ function ProjectDetailPage() {
               {project.admin_price ? (
                 <>
                   <p className="text-2xl font-bold text-slate-900">{fmt(project.admin_price)}</p>
-                  {project.installments > 1 && (
+                  {project.deposit_percentage && project.deposit_percentage > 0 ? (
+                    <div className="mt-2 space-y-0.5">
+                      <p className="text-xs text-violet-600 font-medium">
+                        Seña ({project.deposit_percentage}%): {fmt(Math.round(project.admin_price * project.deposit_percentage / 100))}
+                      </p>
+                      {(() => {
+                        const remaining = project.admin_price - Math.round(project.admin_price * project.deposit_percentage / 100)
+                        if (project.installments > 1) {
+                          return (
+                            <p className="text-xs text-slate-500">
+                              Saldo {fmt(remaining)} en {project.installments} cuotas de {fmt(Math.round(remaining / project.installments))}
+                            </p>
+                          )
+                        }
+                        return <p className="text-xs text-slate-500">Saldo: {fmt(remaining)}</p>
+                      })()}
+                    </div>
+                  ) : project.installments > 1 ? (
                     <p className="text-xs text-slate-500 mt-1">
                       {project.installments} cuotas de {fmt(Math.round(project.admin_price / project.installments))}
                     </p>
-                  )}
+                  ) : null}
                   {project.maintenance_enabled && project.maintenance_monthly && (
                     <p className="text-xs text-slate-500 mt-1">
                       + mantenimiento mensual: {fmt(project.maintenance_monthly)}
@@ -773,9 +829,11 @@ function ProjectDetailPage() {
                   <div className="flex flex-col items-start gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-700">
-                        {pendingProjectPayment.installment_number
-                          ? `Cuota ${pendingProjectPayment.installment_number} por pagar`
-                          : 'Pago del proyecto por pagar'}
+                        {pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0
+                          ? 'Seña por pagar'
+                          : pendingProjectPayment.installment_number
+                            ? `Cuota ${pendingProjectPayment.installment_number} por pagar`
+                            : 'Pago único por pagar'}
                       </p>
                       <p className="text-lg font-bold text-slate-900 mt-1">{fmt(pendingProjectPayment.amount)}</p>
                     </div>
@@ -795,11 +853,16 @@ function ProjectDetailPage() {
                             cuotas: payments.filter(x => x.kind === 'project').length,
                             cuotaActual: pendingProjectPayment.installment_number ?? 1,
                             montoCuota: pendingProjectPayment.amount,
+                            esSeña: (pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0) ? '1' : '0',
                           },
                         })}
                         className="btn-primary py-2.5 px-6"
                       >
-                        Pagar cuota {pendingProjectPayment.installment_number ?? 1}
+                        {(pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0)
+                          ? 'Pagar seña'
+                          : pendingProjectPayment.installment_number
+                            ? `Pagar cuota ${pendingProjectPayment.installment_number}`
+                            : 'Pagar'}
                       </button>
                     )}
                   </div>
@@ -875,7 +938,8 @@ function ProjectDetailPage() {
 
               <div className="space-y-2.5">
                 {payments.map(p => {
-                  const label = p.kind === 'maintenance' ? 'Mantenimiento' : `Cuota ${p.installment_number ?? 1}`
+                  const isDepositPayment = p.kind === 'project' && p.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0
+                  const label = p.kind === 'maintenance' ? 'Mantenimiento' : isDepositPayment ? 'Seña' : p.installment_number ? `Cuota ${p.installment_number}` : 'Pago único'
                   const isPendingMaint = p.kind === 'maintenance' && p.status === 'pendiente'
                   const maintDue = isPendingMaint ? new Date(new Date(p.created_at).getTime() + 30 * 24 * 60 * 60 * 1000) : null
                   return (

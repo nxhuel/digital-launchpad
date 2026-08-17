@@ -34,6 +34,7 @@ function Pagar() {
   const cuotas = (search as any).cuotas ? Number((search as any).cuotas) : 1;
   const cuotaActual = (search as any).cuotaActual ? Number((search as any).cuotaActual) : 1;
   const montoCuota = (search as any).montoCuota ? Number((search as any).montoCuota) : 0;
+  const esSeña = (search as any).esSeña === '1';
 
   const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -111,9 +112,9 @@ function Pagar() {
                 <p className="text-sm text-white/80 font-medium">Total a pagar</p>
                 <p className="text-3xl font-bold mt-1">$ {amountToPay.toLocaleString('es-AR')}</p>
               </div>
-              {!isMaintenance && cuotas > 1 && (
+              {!isMaintenance && (
                 <span className="text-sm bg-white/20 rounded-full px-3 py-1.5 font-semibold">
-                  Cuota {cuotaActual} de {cuotas}
+                  {esSeña ? 'Seña' : cuotas > 1 ? `Cuota ${cuotaActual} de ${cuotas}` : 'Pago único'}
                 </span>
               )}
             </div>

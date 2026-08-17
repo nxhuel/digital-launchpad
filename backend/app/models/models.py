@@ -146,6 +146,7 @@ class Project(Base):
     status = Column(SAEnum(ProjectStatus), default=ProjectStatus.pendiente, nullable=False, index=True)
     admin_price = Column(Integer, nullable=True)
     installments = Column(Integer, default=1, nullable=False)
+    deposit_percentage = Column(Integer, nullable=True)  # None=sin seña, 25 o 50 (%)
     maintenance_enabled = Column(Boolean, default=False, nullable=False)
     maintenance_monthly = Column(Integer, nullable=True)
     accepted_at = Column(DateTime, nullable=True)
@@ -330,6 +331,21 @@ class FormQuestion(Base):
     order = Column(Integer, default=0, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class PortfolioItem(Base):
+    """Trabajo/demo realizado que se muestra en /soluciones-web (gestionado por admin)."""
+    __tablename__ = "portfolio_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False)
+    site_url = Column(String(500), nullable=False)
+    image_url = Column(String(500), nullable=True)  # screenshot/preview de la demo
+    order = Column(Integer, default=0, nullable=False)
+    active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class AuthCode(Base):

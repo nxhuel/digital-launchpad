@@ -31,6 +31,7 @@ export interface Project {
   status: string
   admin_price: number | null
   installments: number
+  deposit_percentage: number | null
   maintenance_enabled: boolean
   maintenance_monthly: number | null
   accepted_at: string | null
@@ -183,4 +184,16 @@ export interface AdminStats {
   recent_projects: Project[]
   income_by_service: { service_name: string; income: number }[]
   pending_cards: number
+}
+
+export interface PortfolioItem {
+  id: number
+  title: string
+  category: string
+  site_url: string
+  image_url: string | null
+  order: number
+  active: boolean
+  created_at: string
+  updated_at: string
 }

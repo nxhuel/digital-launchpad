@@ -117,6 +117,7 @@ function RootComponent() {
     path.startsWith('/tarjetas/') ||
     path === '/formulario' ||
     path.startsWith('/formulario/') ||
+    path === '/portfolio' ||
     path === '/privacidad' ||
     path === '/terminos'
 

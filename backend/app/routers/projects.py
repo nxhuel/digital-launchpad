@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.core.dependencies import get_current_user, check_project_ownership
+from backend.app.core.dependencies import get_current_user, check_project_ownership, require_admin
 from backend.app.core.email import send_status_change_email
 from backend.app.models.models import (
     Project, Service, User, ProjectStatus, Payment, PaymentKind, PaymentStatus,
@@ -16,23 +16,57 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 def _generate_installments(project: Project, db: Session):
+    """Genera pagos del proyecto: seña (si aplica) + cuotas restantes."""
     if not project.admin_price:
         return
+    price = project.admin_price
+    deposit_pct = project.deposit_percentage or 0
     installments = max(project.installments, 1)
-    amount_per = round(project.admin_price / installments)
-    total = 0
-    for i in range(installments):
-        amt = amount_per
-        if i == installments - 1:
-            amt = project.admin_price - total
-        payment = Payment(
+
+    # Eliminar pagos existentes del proyecto (re-generación limpia)
+    db.query(Payment).filter(
+        Payment.project_id == project.id,
+        Payment.kind == PaymentKind.project,
+    ).delete()
+
+    next_num = 1  # contador de cuota
+
+    # 1) Seña (si aplica)
+    if deposit_pct > 0:
+        deposit_amt = round(price * deposit_pct / 100)
+        db.add(Payment(
             project_id=project.id,
-            amount=amt,
+            amount=deposit_amt,
             kind=PaymentKind.project,
-            installment_number=i + 1 if installments > 1 else None,
-        )
-        db.add(payment)
-        total += amt
+            installment_number=next_num,
+        ))
+        next_num += 1
+        remaining = price - deposit_amt
+    else:
+        remaining = price
+
+    # 2) Cuotas del saldo restante
+    if installments > 0 and remaining > 0:
+        amt_per = round(remaining / installments)
+        total = 0
+        # ¿Hemos numerado alguna cuota antes? (seña u otras)
+        has_prior = next_num > 1
+        for i in range(installments):
+            amt = amt_per
+            if i == installments - 1:
+                amt = remaining - total
+            if amt > 0:
+                # Si hay seña u otras cuotas, numeramos siempre;
+                # si es 1 cuota sola sin seña, mantenemos None (compatibilidad)
+                num = next_num + i if (has_prior or installments > 1) else None
+                db.add(Payment(
+                    project_id=project.id,
+                    amount=amt,
+                    kind=PaymentKind.project,
+                    installment_number=num,
+                ))
+            total += amt
+
     db.commit()
 
 
@@ -287,3 +321,13 @@ def reject_project(project_id: int, db: Session = Depends(get_db), current_user:
     po = ProjectOut.model_validate(project)
     po.next_due_date = _get_next_due_date(project, db)
     return po
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Eliminar un proyecto (solo admin)."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
+    db.delete(project)
+    db.commit()

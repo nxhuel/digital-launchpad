@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { User, Project } from '../../types'
-import { Search } from 'lucide-react'
+import { Search, Trash2 } from 'lucide-react'
 import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/users')({
@@ -105,6 +105,16 @@ function UsersPage() {
     }
   }
 
+  const deleteUser = async (userId: number, name: string) => {
+    if (!window.confirm(`¿Eliminar al usuario "${name}"? Esta acción no se puede deshacer.`)) return
+    try {
+      await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' })
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch {
+      alert('No se pudo eliminar el usuario.')
+    }
+  }
+
   const toggleExpanded = async (userId: number) => {
     setUsers(prev => prev.map(u => {
       if (u.id !== userId) return u
@@ -193,13 +203,19 @@ function UsersPage() {
                     onClick={() => toggleRole(u.id, u.role)}
                     className={`btn-outline text-xs py-1.5 px-3 ${u.role === 'admin' ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : ''}`}
                   >
-                    {u.role === 'admin' ? '👑 Quitar admin' : '⚡ Hacer admin'}
+                    {u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
                   </button>
                   <button
                     onClick={() => toggleExpanded(u.id)}
                     className="btn-outline text-xs py-1.5"
                   >
                     {u.expanded ? 'Ocultar' : 'Ver proyectos'}
+                  </button>
+                  <button
+                    onClick={() => deleteUser(u.id, u.name)}
+                    className="btn-outline text-xs py-1.5 px-3 text-red-500 border-red-200 hover:bg-red-50"
+                  >
+                    Eliminar
                   </button>
                 </div>
               </div>

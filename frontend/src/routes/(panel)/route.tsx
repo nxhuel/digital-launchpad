@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate, redirect, useRouterState } from '
 import { useEffect, useState } from 'react'
 import { getAccessToken, clearTokens, apiFetch } from '../../lib/api'
 import type { User, Notification } from '../../types'
-import { Bell, LogOut, LayoutDashboard, FolderKanban, Package, Users, Menu, X, ChevronRight, Wallet, CreditCard, ClipboardList } from 'lucide-react'
+import { Bell, LogOut, LayoutDashboard, FolderKanban, Package, Users, Menu, X, ChevronRight, Wallet, CreditCard, ClipboardList, Image } from 'lucide-react'
 import fondoDashboard from '@/assets/fondo-dashboard.png'
 
 export const Route = createFileRoute('/(panel)')(({
@@ -66,6 +66,7 @@ function PanelLayout() {
     { to: '/formulario', label: 'Formulario pedidos', icon: ClipboardList, adminOnly: true },
     { to: '/services', label: 'Servicios', icon: Package, adminOnly: true },
     { to: '/users', label: 'Clientes', icon: Users, adminOnly: true },
+    { to: '/portfolio', label: 'Portfolio', icon: Image, adminOnly: true },
     { to: '/finanzas', label: 'Finanzas', icon: Wallet, adminOnly: true },
   ]
 
