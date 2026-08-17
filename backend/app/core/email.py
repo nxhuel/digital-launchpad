@@ -69,6 +69,55 @@ def _branded_html(title: str, body_html: str) -> str:
 </html>"""
 
 
+def send_status_change_email(to_email: str, project_title: str, new_status: str, project_id: int, client_name: str | None = None) -> None:
+    """Envía un email al cliente cuando cambia el estado de su proyecto."""
+    first_name = (client_name or "").strip().split()[0] if (client_name or "").strip() else ""
+    greeting = f"Hola {first_name}," if first_name else "Hola,"
+
+    status_labels = {
+        "pendiente": "Pendiente",
+        "cotizado": "Cotizado",
+        "aceptado": "Aceptado",
+        "desarrollo": "En desarrollo",
+        "entregado": "Entregado",
+        "completado": "Completado",
+        "rechazado": "Rechazado",
+    }
+    label = status_labels.get(new_status, new_status)
+
+    accent_color = "#7c3aed"  # violeta Clik
+    if new_status == "cotizado":
+        accent_color = "#2563eb"  # azul
+    elif new_status == "desarrollo":
+        accent_color = "#7c3aed"  # violeta
+    elif new_status == "entregado":
+        accent_color = "#059669"  # verde
+    elif new_status == "completado":
+        accent_color = "#059669"  # verde
+    elif new_status == "rechazado":
+        accent_color = "#dc2626"  # rojo
+
+    subject = f"Tu proyecto '{project_title}' cambió a {label}"
+    title = "Actualización de tu proyecto"
+    body = f"""
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">{greeting}</p>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
+        Te informamos que el estado de tu proyecto <strong>\'{project_title}\'</strong> ha cambiado.
+      </p>
+      <div style="margin:0 0 20px;text-align:center;">
+        <span style="display:inline-block;font-size:16px;font-weight:bold;color:#ffffff;background:{accent_color};border-radius:8px;padding:10px 24px;letter-spacing:0.5px;">{label}</span>
+      </div>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
+        Podés ver los detalles de tu proyecto ingresando a tu panel de Clik.
+      </p>
+      <div style="text-align:center;margin:24px 0 0;">
+        <a href="https://www.clik.com.ar/projects/{project_id}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 28px;border-radius:8px;">Ver mi proyecto</a>
+      </div>
+    """
+
+    _send(to_email, subject, _branded_html(title, body))
+
+
 def send_code_email(to_email: str, code: str, name: str | None = None, purpose: str = "verification") -> None:
     """Envía un código de verificación o de restablecimiento de contraseña."""
     first_name = (name or "").strip().split()[0] if (name or "").strip() else ""

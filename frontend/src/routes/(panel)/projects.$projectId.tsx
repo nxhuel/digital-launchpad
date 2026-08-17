@@ -58,6 +58,35 @@ function fmt(n: number) {
   return '$ ' + n.toLocaleString('es-AR')
 }
 
+/* ─── Linkify: convierte URLs en texto a enlaces clickeables ─── */
+const URL_REGEX = /(https?:\/\/[\w\-._~:/?#\[\]@!$&'()*+,;=%]+?)(?=[\s,;:!?)\]\u201d]|$)/gi
+
+function Linkify({ text, isMine }: { text: string; isMine: boolean }) {
+  const parts = text.split(URL_REGEX)
+  if (parts.length === 1) return <p className="text-sm leading-relaxed">{text}</p>
+  return (
+    <p className="text-sm leading-relaxed">
+      {parts.map((part, i) => {
+        if (URL_REGEX.test(part)) {
+          URL_REGEX.lastIndex = 0
+          return (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noreferrer"
+              className={`underline break-all ${isMine ? 'text-violet-200 hover:text-white' : 'text-violet-600 hover:text-violet-800'}`}
+            >
+              {part}
+            </a>
+          )
+        }
+        return <span key={i}>{part}</span>
+      })}
+    </p>
+  )
+}
+
 function fmtDateShort(iso: string) {
   const d = new Date(iso)
   const day = d.getDate().toString().padStart(2, '0')
@@ -431,7 +460,7 @@ function ProjectDetailPage() {
                         {!isMine && (
                           <p className="text-[11px] font-semibold mb-1 opacity-60">{m.sender?.name || '—'}</p>
                         )}
-                        {m.body && <p className="text-sm leading-relaxed">{m.body}</p>}
+                        {m.body && <Linkify text={m.body} isMine={isMine} />}
                         {m.attachments?.map(a => (
                           <a
                             key={a.id}

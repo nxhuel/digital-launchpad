@@ -82,9 +82,16 @@ export const Route = createRootRoute({
 });
 
 function WhatsAppFloat() {
+  const path = useRouterState({ select: s => s.location.pathname })
+  const msg =
+    path === '/tarjetas-digitales'
+      ? 'Hola! Quiero consultar sobre invitaciones digitales.'
+      : path === '/soluciones-web'
+        ? 'Hola! Quiero consultar sobre soluciones web.'
+        : undefined
   return (
     <a
-      href={whatsappLink()}
+      href={whatsappLink(msg)}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg shadow-[#25D366]/30 transition-all hover:scale-110 hover:shadow-xl active:scale-95"
@@ -112,7 +119,7 @@ function RootComponent() {
     path.startsWith('/formulario/') ||
     path === '/privacidad' ||
     path === '/terminos'
-  const hideWhatsApp = path === '/tarjetas-digitales' || path === '/soluciones-web'
+
 
   if (isPanel) {
     return (
@@ -129,7 +136,7 @@ function RootComponent() {
       <Header />
       <Outlet />
       <Footer />
-      {!hideWhatsApp && <WhatsAppFloat />}
+      <WhatsAppFloat />
       <Toaster position="top-right" />
     </div>
   );

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.core.dependencies import get_current_user, check_project_ownership
+from backend.app.core.email import send_status_change_email
 from backend.app.models.models import (
     Project, Service, User, ProjectStatus, Payment, PaymentKind, PaymentStatus,
     Notification, NotificationKind
@@ -180,7 +181,7 @@ def update_project(project_id: int, body: ProjectUpdate, db: Session = Depends(g
     project.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(project)
-    # Notify on status change
+    # Notify on status change (in-app + email)
     if body.status and project.client_id != current_user.id:
         _create_notification(
             user_id=project.client_id,
@@ -190,6 +191,19 @@ def update_project(project_id: int, body: ProjectUpdate, db: Session = Depends(g
             link=f"/projects/{project.id}",
             db=db,
         )
+        # Send email notification to client
+        client = db.query(User).filter(User.id == project.client_id).first()
+        if client:
+            try:
+                send_status_change_email(
+                    to_email=client.email,
+                    project_title=project.title,
+                    new_status=body.status,
+                    project_id=project.id,
+                    client_name=client.name,
+                )
+            except Exception:
+                pass  # Log ya manejado en _send
     po = ProjectOut.model_validate(project)
     po.next_due_date = _get_next_due_date(project, db)
     return po
@@ -220,6 +234,19 @@ def accept_project(project_id: int, db: Session = Depends(get_db), current_user:
         link=f"/projects/{project.id}",
         db=db,
     )
+    # Send email notification
+    client = db.query(User).filter(User.id == project.client_id).first()
+    if client:
+        try:
+            send_status_change_email(
+                to_email=client.email,
+                project_title=project.title,
+                new_status="aceptado",
+                project_id=project.id,
+                client_name=client.name,
+            )
+        except Exception:
+            pass
     po = ProjectOut.model_validate(project)
     po.next_due_date = _get_next_due_date(project, db)
     return po
@@ -244,6 +271,19 @@ def reject_project(project_id: int, db: Session = Depends(get_db), current_user:
         link=f"/projects/{project.id}",
         db=db,
     )
+    # Send email notification
+    client = db.query(User).filter(User.id == project.client_id).first()
+    if client:
+        try:
+            send_status_change_email(
+                to_email=client.email,
+                project_title=project.title,
+                new_status="rechazado",
+                project_id=project.id,
+                client_name=client.name,
+            )
+        except Exception:
+            pass
     po = ProjectOut.model_validate(project)
     po.next_due_date = _get_next_due_date(project, db)
     return po
