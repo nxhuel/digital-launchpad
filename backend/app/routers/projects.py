@@ -29,36 +29,28 @@ def _generate_installments(project: Project, db: Session):
         Payment.kind == PaymentKind.project,
     ).delete()
 
-    next_num = 1  # contador de cuota
-
-    # 1) Seña (si aplica)
+    # 1) Seña (si aplica) — tipo propio, no es cuota
     if deposit_pct > 0:
         deposit_amt = round(price * deposit_pct / 100)
         db.add(Payment(
             project_id=project.id,
             amount=deposit_amt,
-            kind=PaymentKind.project,
-            installment_number=next_num,
+            kind=PaymentKind.deposit,
         ))
-        next_num += 1
         remaining = price - deposit_amt
     else:
         remaining = price
 
-    # 2) Cuotas del saldo restante
+    # 2) Cuotas del saldo restante — SIEMPRE arrancan en 1
     if installments > 0 and remaining > 0:
         amt_per = round(remaining / installments)
         total = 0
-        # ¿Hemos numerado alguna cuota antes? (seña u otras)
-        has_prior = next_num > 1
         for i in range(installments):
             amt = amt_per
             if i == installments - 1:
                 amt = remaining - total
             if amt > 0:
-                # Si hay seña u otras cuotas, numeramos siempre;
-                # si es 1 cuota sola sin seña, mantenemos None (compatibilidad)
-                num = next_num + i if (has_prior or installments > 1) else None
+                num = i + 1 if installments > 1 else None
                 db.add(Payment(
                     project_id=project.id,
                     amount=amt,

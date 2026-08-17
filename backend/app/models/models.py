@@ -27,6 +27,7 @@ class ProjectStatus(str, enum.Enum):
 class PaymentKind(str, enum.Enum):
     project = "project"
     maintenance = "maintenance"
+    deposit = "deposit"
 
 
 class PaymentStatus(str, enum.Enum):

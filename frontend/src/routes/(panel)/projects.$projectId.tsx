@@ -337,7 +337,7 @@ function ProjectDetailPage() {
   const suggestedMonthly = adminPrice ? Math.round(Number(adminPrice) / 2) : 0
 
   // Payment logic
-  const pendingProjectPayment = payments.find(p => p.kind === 'project' && p.status === 'pendiente')
+  const pendingProjectPayment = payments.find(p => (p.kind === 'project' || p.kind === 'deposit') && p.status === 'pendiente')
   const pendingMaintenancePayment = payments.find(p => p.kind === 'maintenance' && p.status === 'pendiente')
 
   const now2 = new Date()
@@ -829,7 +829,7 @@ function ProjectDetailPage() {
                   <div className="flex flex-col items-start gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-700">
-                        {pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0
+                        {pendingProjectPayment.kind === 'deposit'
                           ? 'Seña por pagar'
                           : pendingProjectPayment.installment_number
                             ? `Cuota ${pendingProjectPayment.installment_number} por pagar`
@@ -853,12 +853,12 @@ function ProjectDetailPage() {
                             cuotas: payments.filter(x => x.kind === 'project').length,
                             cuotaActual: pendingProjectPayment.installment_number ?? 1,
                             montoCuota: pendingProjectPayment.amount,
-                            esSeña: (pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0) ? '1' : '0',
+                            esSeña: pendingProjectPayment.kind === 'deposit' ? '1' : '0',
                           },
                         })}
                         className="btn-primary py-2.5 px-6"
                       >
-                        {(pendingProjectPayment.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0)
+                        {pendingProjectPayment.kind === 'deposit'
                           ? 'Pagar seña'
                           : pendingProjectPayment.installment_number
                             ? `Pagar cuota ${pendingProjectPayment.installment_number}`
@@ -919,7 +919,7 @@ function ProjectDetailPage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-700">Historial de pagos</h3>
                 <span className="text-xs text-slate-400">
-                  {confirmedPayments.length}/{payments.filter(p => p.kind === 'project').length} cuotas
+                  {confirmedPayments.length}/{payments.filter(p => p.kind === 'project' || p.kind === 'deposit').length} pagos
                 </span>
               </div>
 
@@ -938,8 +938,7 @@ function ProjectDetailPage() {
 
               <div className="space-y-2.5">
                 {payments.map(p => {
-                  const isDepositPayment = p.kind === 'project' && p.installment_number === 1 && project.deposit_percentage && project.deposit_percentage > 0
-                  const label = p.kind === 'maintenance' ? 'Mantenimiento' : isDepositPayment ? 'Seña' : p.installment_number ? `Cuota ${p.installment_number}` : 'Pago único'
+                  const label = p.kind === 'maintenance' ? 'Mantenimiento' : p.kind === 'deposit' ? 'Seña' : p.installment_number ? `Cuota ${p.installment_number}` : 'Pago único'
                   const isPendingMaint = p.kind === 'maintenance' && p.status === 'pendiente'
                   const maintDue = isPendingMaint ? new Date(new Date(p.created_at).getTime() + 30 * 24 * 60 * 60 * 1000) : null
                   return (

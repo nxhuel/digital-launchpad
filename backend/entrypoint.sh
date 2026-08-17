@@ -38,6 +38,12 @@ with engine.begin() as conn:
             print(f"Migration: ensured {column} on {table}")
         except Exception as e:
             print(f"Migration note ({table}.{column}): {e}")
+    # Add 'deposit' to paymentkind enum if missing
+    try:
+        conn.execute(text("ALTER TYPE paymentkind ADD VALUE IF NOT EXISTS 'deposit'"))
+        print("Migration: added deposit to paymentkind enum")
+    except Exception as e:
+        print(f"Migration note (paymentkind deposit): {e}")
 
 # Verify tables
 with engine.connect() as conn:
