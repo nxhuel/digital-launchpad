@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, Globe, Monitor, Bot, ChevronDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { whatsappLink } from "@/config/site";
@@ -158,27 +158,43 @@ function ServiceCard({ s, i }: { s: (typeof services)[number]; i: number }) {
   );
 }
 
-function BrowserMockup({ item }: { item: PortfolioItem }) {
+/* Stagger offsets per card index for the intercalated effect */
+const staggerOffsets = [
+  { marginTop: '0px' },
+  { marginTop: '48px' },
+  { marginTop: '-16px' },
+  { marginTop: '64px' },
+  { marginTop: '8px' },
+  { marginTop: '40px' },
+  { marginTop: '-24px' },
+  { marginTop: '56px' },
+]
+
+function BrowserMockup({ item, index }: { item: PortfolioItem; index: number }) {
   const hostname = (() => {
     try { return new URL(item.site_url).hostname } catch { return item.site_url }
   })()
+  const stagger = staggerOffsets[index % staggerOffsets.length]
 
   return (
-    <div className="group/card flex-shrink-0 w-[340px] md:w-[400px] cursor-grab active:cursor-grabbing">
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden transition-transform duration-500 group-hover/card:scale-[1.03] group-hover/card:-rotate-0 hover:!rotate-0" style={{ transform: `rotate(${(Math.random() * 3 - 1.5).toFixed(1)}deg)` }}>
-        {/* Browser chrome */}
-        <div className="bg-slate-100 px-3 py-2.5 flex items-center gap-2 border-b border-slate-200">
+    <div
+      className="group/card w-full transition-all duration-300"
+      style={{ marginTop: stagger.marginTop }}
+    >
+      <div className="bg-white overflow-hidden transition-all duration-300 group-hover/card:shadow-2xl border border-slate-200 group-hover/card:border-violet-300">
+        {/* Browser chrome — urban dark bar */}
+        <div className="bg-slate-900 px-3 py-2.5 flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
             <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
           </div>
-          <div className="flex-1 bg-white rounded-md px-3 py-1 text-[10px] text-slate-400 truncate text-center border border-slate-200">
+          <div className="flex-1 bg-slate-700/60 rounded-md px-3 py-1 text-[10px] text-slate-400 truncate text-center">
             {hostname}
           </div>
         </div>
-        {/* Viewport: screenshot or iframe */}
-        <div className="relative h-56 md:h-64 bg-slate-50 overflow-hidden">
+        {/* Viewport: wide notebook-style landscape */}
+        <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
           {item.image_url ? (
             <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
@@ -186,28 +202,28 @@ function BrowserMockup({ item }: { item: PortfolioItem }) {
               src={item.site_url}
               title={item.title}
               className="w-full h-full border-0 pointer-events-none origin-top-left"
-              style={{ width: '222%', height: '222%', transform: 'scale(0.45)', transformOrigin: 'top left' }}
+              style={{ width: '190%', height: '190%', transform: 'scale(0.52)', transformOrigin: 'top left' }}
               loading="lazy"
               sandbox="allow-same-origin"
             />
           )}
         </div>
-        {/* Footer with title + category + buttons */}
-        <div className="p-4 bg-white border-t border-slate-100">
+        {/* Footer — bold urban style */}
+        <div className="p-5 bg-white border-t border-slate-100">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
-            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+            <h3 className="font-black text-slate-900 text-base tracking-tight uppercase">{item.title}</h3>
+            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-slate-900 text-white">
               {item.category}
             </span>
           </div>
           <div className="flex gap-2">
             <a href={item.site_url} target="_blank" rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg py-2 transition-colors">
-              <ExternalLink className="w-3 h-3" /> Abrir sitio
+              className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 py-2.5 transition-colors uppercase tracking-wide">
+              <ExternalLink className="w-3.5 h-3.5" /> Abrir sitio
             </a>
             <a href={whatsappLink(`Hola! Vi el trabajo "${item.title}" y quiero algo así para mi negocio.`)}
               target="_blank" rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-1 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg py-2 transition-colors">
+              className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 py-2.5 transition-colors uppercase tracking-wide">
               Quiero algo así
             </a>
           </div>
@@ -219,9 +235,6 @@ function BrowserMockup({ item }: { item: PortfolioItem }) {
 
 function PortfolioSection() {
   const [items, setItems] = useState<PortfolioItem[]>([])
-  const trackRef = useRef<HTMLDivElement | null>(null)
-  const pausedRef = useRef(false)
-  const posRef = useRef(0)
 
   useEffect(() => {
     apiFetch<PortfolioItem[]>('/public/portfolio')
@@ -229,68 +242,49 @@ function PortfolioSection() {
       .catch(() => {})
   }, [])
 
-  // Infinite auto-scroll using CSS transform
-  useEffect(() => {
-    const track = trackRef.current
-    if (!track || items.length === 0) return
-    let animId: number
-    const speed = 0.6 // px per frame
-
-    const animate = () => {
-      if (!pausedRef.current) {
-        posRef.current -= speed
-        // Reset when scrolled past first set width
-        const setWidth = track.scrollWidth / 2
-        if (Math.abs(posRef.current) >= setWidth) {
-          posRef.current += setWidth
-        }
-      }
-      track.style.transform = `translateX(${posRef.current}px)`
-      animId = requestAnimationFrame(animate)
-    }
-    animId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animId)
-  }, [items.length])
-
-  const onEnter = () => { pausedRef.current = true }
-  const onLeave = () => { pausedRef.current = false }
-
   if (items.length === 0) return null
 
-  // Duplicate items for infinite loop
-  const loopItems = [...items, ...items, ...items]
+  // Split items into two rows for stagger effect
+  const row1 = items.filter((_, i) => i % 2 === 0)
+  const row2 = items.filter((_, i) => i % 2 === 1)
 
   return (
-    <section className="py-20 md:py-28 relative overflow-hidden" style={{ backgroundColor: '#F1F5F9' }}>
-      {/* Decorative dots */}
-      <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle, #7c3aed 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+    <section className="py-20 md:py-28 relative" style={{ backgroundColor: '#F1F5F9' }}>
+      {/* Subtle grain texture overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: '150px' }} />
 
-      <div className="relative z-10">
-        <div className="text-center max-w-2xl mx-auto mb-12 px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        {/* Header — centered, matching PLANES style */}
+        <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
             NUESTROS TRABAJOS
           </div>
           <h2 className="font-display text-4xl md:text-5xl mb-4 text-slate-900">
-            ¿Qué podemos<span className="text-primary"> crear?</span>
+            ¿Qué podemos{' '}<span className="text-primary">crear?</span>
           </h2>
           <p className="text-slate-500 text-base leading-relaxed">
-            Estos son algunos de los sitios y sistemas que desarrollamos.
+            Estos son algunos de los sitios y sistemas que desarrollamos a nivel <span className="font-bold">demo</span>.
           </p>
         </div>
 
-        {/* Carousel: clips children at edges, auto-scrolls infinitely, pauses on hover */}
-        <div className="overflow-hidden" onMouseEnter={onEnter} onMouseLeave={onLeave} onTouchStart={onEnter} onTouchEnd={onLeave}>
-          <div
-            ref={trackRef}
-            className="flex gap-8 py-4 pl-8 pr-0 will-change-transform"
-            style={{ width: 'max-content' }}
-          >
-            {loopItems.map((item, i) => (
-              <div key={`${item.id}-${i}`} onMouseEnter={onEnter} onMouseLeave={onLeave}>
-                <BrowserMockup item={item} />
-              </div>
-            ))}
-          </div>
+        {/* Staggered grid — tight spacing */}
+        <div className="space-y-1">
+          {/* Row 1 */}
+          {row1.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+              {row1.map((item, i) => (
+                <BrowserMockup key={item.id} item={item} index={i * 2} />
+              ))}
+            </div>
+          )}
+          {/* Row 2 — offset to the right */}
+          {row2.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 md:pl-8 lg:pl-12">
+              {row2.map((item, i) => (
+                <BrowserMockup key={item.id} item={item} index={i * 2 + 1} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -332,7 +326,7 @@ function SolucionesWeb() {
 
       <PortfolioSection />
 
-      <section id="planes" className="py-20 md:py-28 relative bg-slate-100">
+      <section id="planes" className="pt-6 pb-20 md:pb-28 relative bg-slate-100">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
