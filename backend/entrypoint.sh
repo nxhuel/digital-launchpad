@@ -15,7 +15,7 @@ print(f"DB URL: {settings.DATABASE_URL}")
 
 # Create tables
 from backend.app.core.database import engine, Base, SessionLocal
-from backend.app.models.models import User, Service, Project, Message, Attachment, DeliveryRecord, Payment, Notification, FinanceEntry, DigitalCard, CardMessage, CardCategory, CardDesign, AuthCode, FormQuestion, PortfolioItem
+from backend.app.models.models import User, Service, Project, Message, Attachment, DeliveryRecord, Payment, Notification, FinanceEntry, DigitalCard, CardMessage, CardCategory, CardDesign, AuthCode, FormQuestion, PortfolioItem, MonthlyExpense
 Base.metadata.create_all(bind=engine)
 print("Tables created")
 

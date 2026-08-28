@@ -186,6 +186,15 @@ export interface AdminStats {
   pending_cards: number
 }
 
+export interface MonthlyExpense {
+  id: number
+  service_name: string
+  amount: number
+  payment_date: string
+  month_key: string
+  created_at: string
+}
+
 export interface PortfolioItem {
   id: number
   title: string

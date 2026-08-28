@@ -522,6 +522,32 @@ class UploadedFileOut(UTCBaseModel):
     size: int
 
 
+# --- Monthly expenses (gastos del mes) ---
+
+
+class MonthlyExpenseCreate(UTCBaseModel):
+    service_name: str = Field(..., min_length=1, max_length=255)
+    amount: int = Field(..., gt=0)
+    payment_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class MonthlyExpenseUpdate(UTCBaseModel):
+    service_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    amount: Optional[int] = Field(None, gt=0)
+    payment_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class MonthlyExpenseOut(UTCBaseModel):
+    id: int
+    service_name: str
+    amount: int
+    payment_date: str
+    month_key: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # --- Portfolio ---
 
 class PortfolioItemOut(UTCBaseModel):

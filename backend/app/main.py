@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.core.config import BASE_DIR, settings
 from backend.app.core.database import engine, Base
-from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog, form_questions, orders, portfolio
+from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog, form_questions, orders, portfolio, monthly_expenses
 
 # Ensure db directory exists (solo SQLite necesita un directorio local)
 if settings.DATABASE_URL.startswith("sqlite"):
@@ -74,6 +74,7 @@ app.include_router(orders.router, prefix="/api")
 app.include_router(orders.public_router, prefix="/api")
 app.include_router(portfolio.router, prefix="/api")
 app.include_router(portfolio.public_router, prefix="/api")
+app.include_router(monthly_expenses.router, prefix="/api")
 
 # Asegura que las imágenes WebP (generadas por la optimización de uploads)
 # se sirvan con su content-type correcto

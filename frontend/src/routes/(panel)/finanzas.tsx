@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
-import type { FinanceEntry, User } from '../../types'
+import type { FinanceEntry, MonthlyExpense, User } from '../../types'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, TrendingUp, TrendingDown, Loader2, ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, TrendingUp, TrendingDown, Loader2, ChevronDown, ChevronsDown, ChevronsUp, Receipt } from 'lucide-react'
 
 export const Route = createFileRoute('/(panel)/finanzas')({
   component: FinanzasPage,
@@ -41,6 +41,229 @@ interface MonthGroup {
   rows: Row[]
   income: number
   expense: number
+}
+
+/* ─── Monthly expenses modal ─── */
+function MonthlyExpensesModal({
+  open,
+  onClose,
+  currentMonth,
+  onRefresh,
+}: {
+  open: boolean
+  onClose: () => void
+  currentMonth: string
+  onRefresh?: () => void
+}) {
+  const [allExpenses, setAllExpenses] = useState<MonthlyExpense[]>([])
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+  const [serviceName, setServiceName] = useState('')
+  const [amount, setAmount] = useState('')
+  const [paymentDate, setPaymentDate] = useState(todayISO())
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!open) return
+    setSelectedMonth(currentMonth)
+    setLoading(true)
+    apiFetch<MonthlyExpense[]>('/monthly-expenses').then(data => {
+      setAllExpenses(data)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [open, currentMonth])
+
+  // Filter expenses for selected month
+  const expenses = allExpenses.filter(e => e.month_key === selectedMonth)
+
+  // Get unique months with expenses (sorted desc)
+  const availableMonths = useMemo(() => {
+    const map = new Map<string, number>()
+    allExpenses.forEach(e => {
+      map.set(e.month_key, (map.get(e.month_key) || 0) + e.amount)
+    })
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+  }, [allExpenses])
+
+  // Always include current month even if empty
+  const allMonths = useMemo(() => {
+    const keys = new Set(availableMonths.map(([k]) => k))
+    if (!keys.has(currentMonth)) {
+      return [[currentMonth, 0] as const, ...availableMonths]
+    }
+    return availableMonths
+  }, [availableMonths, currentMonth])
+
+  const addExpense = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const value = Number(amount)
+    if (!serviceName.trim() || !value || value <= 0) return
+    setSaving(true)
+    try {
+      const created = await apiFetch<MonthlyExpense>('/monthly-expenses', {
+        method: 'POST',
+        body: JSON.stringify({
+          service_name: serviceName.trim(),
+          amount: value,
+          payment_date: paymentDate,
+        }),
+      })
+      setAllExpenses(prev => [created, ...prev])
+      setServiceName('')
+      setAmount('')
+      setPaymentDate(todayISO())
+      toast.success('Gasto registrado')
+      onRefresh?.()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const removeExpense = async (id: number, name: string) => {
+    if (!confirm(`¿Eliminar "${name}"?`)) return
+    await apiFetch(`/monthly-expenses/${id}`, { method: 'DELETE' })
+    setAllExpenses(prev => prev.filter(e => e.id !== id))
+    toast.success('Gasto eliminado')
+    onRefresh?.()
+  }
+
+  if (!open) return null
+
+  const total = expenses.reduce((s, e) => s + e.amount, 0)
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h2 className="font-bold text-slate-900 text-lg">Gastos del mes</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Month selector mini cards */}
+        <div className="px-6 pt-4 pb-3 shrink-0">
+          <p className="text-xs font-medium text-slate-400 mb-2">Seleccioná un mes</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {allMonths.map(([mk, totalAmt]) => (
+              <button
+                key={mk}
+                type="button"
+                onClick={() => setSelectedMonth(mk)}
+                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${
+                  selectedMonth === mk
+                    ? 'border-amber-400 bg-amber-50 text-amber-700'
+                    : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                }`}
+              >
+                <span className="block">{monthLabel(mk)}</span>
+                <span className={`block text-[10px] mt-0.5 ${selectedMonth === mk ? 'text-amber-500' : 'text-slate-400'}`}>
+                  {totalAmt > 0 ? fmt(totalAmt) : 'Sin gastos'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={addExpense} className="px-6 py-4 border-b border-slate-100 shrink-0">
+          <div className="grid grid-cols-12 gap-3 items-end">
+            <div className="col-span-5">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Servicio</label>
+              <input
+                value={serviceName}
+                onChange={e => setServiceName(e.target.value)}
+                className="panel-input text-sm"
+                placeholder="Ej: Hosting, Dominio..."
+                required
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+              <input
+                type="number"
+                min={1}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="panel-input text-sm"
+                placeholder="$"
+                required
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Fecha de pago</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={e => setPaymentDate(e.target.value)}
+                className="panel-input text-sm"
+                required
+              />
+            </div>
+            <div className="col-span-1">
+              <button
+                type="submit"
+                disabled={saving || !serviceName.trim() || !amount || Number(amount) <= 0}
+                className="btn-primary h-9 px-3 text-sm disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Table */}
+        <div className="px-6 py-4 overflow-auto flex-1 min-h-0">
+          {loading ? (
+            <p className="text-center text-slate-400 text-sm py-6">Cargando...</p>
+          ) : expenses.length === 0 ? (
+            <p className="text-center text-slate-400 text-sm py-6">Sin gastos este mes</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
+                  <th className="pb-2 font-semibold">Servicio</th>
+                  <th className="pb-2 font-semibold text-right">Monto</th>
+                  <th className="pb-2 font-semibold text-right">Fecha</th>
+                  <th className="pb-2 w-10" />
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map(exp => (
+                  <tr key={exp.id} className="group border-b border-slate-50">
+                    <td className="py-2.5 text-slate-800 font-medium">{exp.service_name}</td>
+                    <td className="py-2.5 text-right text-amber-500 font-semibold">{fmt(exp.amount)}</td>
+                    <td className="py-2.5 text-right text-slate-500">{fmtDayMonth(exp.payment_date)}</td>
+                    <td className="py-2.5">
+                      <button
+                        onClick={() => removeExpense(exp.id, exp.service_name)}
+                        className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-slate-200">
+                  <td className="py-2.5 font-bold text-slate-900">Total</td>
+                  <td className="py-2.5 text-right font-bold text-amber-500">{fmt(total)}</td>
+                  <td />
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* ─── Entry form modal ─── */
@@ -195,9 +418,11 @@ function FinanzasPage() {
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [entries, setEntries] = useState<FinanceEntry[]>([])
+  const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<FinanceEntry | null>(null)
+  const [gastosOpen, setGastosOpen] = useState(false)
 
   useEffect(() => {
     apiFetch<User>('/auth/me').then(u => {
@@ -206,7 +431,10 @@ function FinanzasPage() {
         return
       }
       setUser(u)
-      apiFetch<FinanceEntry[]>('/finances').then(setEntries).finally(() => setLoading(false))
+      Promise.all([
+        apiFetch<FinanceEntry[]>('/finances'),
+        apiFetch<MonthlyExpense[]>('/monthly-expenses'),
+      ]).then(([e, me]) => { setEntries(e); setMonthlyExpenses(me) }).finally(() => setLoading(false))
     })
   }, [])
 
@@ -303,10 +531,16 @@ function FinanzasPage() {
           <h1 className="page-title">Finanzas</h1>
           <p className="page-subtitle">Registrá ingresos y egresos de forma simple, mes a mes.</p>
         </div>
-        <button onClick={() => { setEditing(null); setModalOpen(true) }} className="btn-primary shrink-0">
-          <Plus className="w-4 h-4" />
-          Registrar movimiento
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => setGastosOpen(true)} className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-amber-400 text-amber-600 font-medium text-sm hover:bg-amber-50 transition-colors">
+            <Receipt className="w-4 h-4" />
+            Gastos del mes
+          </button>
+          <button onClick={() => { setEditing(null); setModalOpen(true) }} className="btn-primary shrink-0">
+            <Plus className="w-4 h-4" />
+            Registrar movimiento
+          </button>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -320,10 +554,8 @@ function FinanzasPage() {
           <p className="text-2xl font-bold text-red-500 mt-1">{fmt(monthExpense)}</p>
         </div>
         <div className="panel-card">
-          <p className="text-sm text-slate-500">Balance del mes</p>
-          <p className={`text-2xl font-bold mt-1 ${monthIncome - monthExpense >= 0 ? 'text-slate-900' : 'text-red-500'}`}>
-            {fmt(monthIncome - monthExpense)}
-          </p>
+          <p className="text-sm text-slate-500">Gastos del mes</p>
+          <p className="text-2xl font-bold text-amber-500 mt-1">{fmt(monthlyExpenses.filter(e => e.month_key === monthKey).reduce((s, e) => s + e.amount, 0))}</p>
         </div>
         <div className="panel-card bg-violet-50/40 border-violet-200">
           <p className="text-sm text-slate-500">Saldo acumulado</p>
@@ -469,6 +701,13 @@ function FinanzasPage() {
         editing={editing}
         onClose={() => { setModalOpen(false); setEditing(null) }}
         onSave={save}
+      />
+
+      <MonthlyExpensesModal
+        open={gastosOpen}
+        onClose={() => setGastosOpen(false)}
+        currentMonth={monthKey}
+        onRefresh={() => apiFetch<MonthlyExpense[]>('/monthly-expenses').then(setMonthlyExpenses)}
       />
     </div>
   )

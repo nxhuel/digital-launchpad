@@ -349,6 +349,18 @@ class PortfolioItem(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
 
+class MonthlyExpense(Base):
+    """Gasto fijo mensual (hosting, dominio, etc.) registrado por admin."""
+    __tablename__ = "monthly_expenses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    service_name = Column(String(255), nullable=False)
+    amount = Column(Integer, nullable=False)
+    payment_date = Column(String(10), nullable=False)  # YYYY-MM-DD
+    month_key = Column(String(7), nullable=False, index=True)  # YYYY-MM
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
 class AuthCode(Base):
     """Códigos de verificación de email y de restablecimiento de contraseña (guardados hasheados)."""
     __tablename__ = "auth_codes"
