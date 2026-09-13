@@ -44,7 +44,7 @@ const faqItems: FaqItem[] = [
   {
     question: "¿Cuál es la diferencia entre los tres modelos de invitación?",
     answer:
-      "* *Estándar:* botón de confirmación que redirige a WhatsApp. Ideal si solo querés saber quién asiste.\n* *Premium:* incluye nuestro sistema de confirmación propio, con formulario dentro de la invitación y listado en tiempo real, descargable en Excel o PDF.\n* *Premium Plus+:* invitación personalizada para cada invitado, con nombre y lugar asignado. Incluye trivia interactiva y álbum QR de fotos.",
+      "* *Estándar:* botón de confirmación que redirige a WhatsApp. Ideal si solo querés saber quién asiste.\n* *Premium:* incluye nuestro sistema de confirmación propio, con formulario dentro de la invitación y listado en tiempo real, descargable en Excel o PDF.\n* *Premium Plus+:* Incluye trivia interactiva y álbum QR de fotos.",
   },
   {
     question: "¿Cuál es el modelo más elegido?",
