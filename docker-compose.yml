@@ -30,6 +30,7 @@ services:
       - UPLOAD_DIR=/app/backend/uploads
     volumes:
       - upload_data:/app/backend/uploads
+      - cards_data:/app/backend/deployed_cards
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +49,4 @@ services:
 volumes:
   pg_data:
   upload_data:
+  cards_data:

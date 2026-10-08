@@ -25,6 +25,7 @@ dist/**
 uploads/
 clik.db
 test_clik.db
+backend/deployed_cards/
 
 # Panel
 panel/dist/

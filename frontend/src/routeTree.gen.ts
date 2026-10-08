@@ -21,9 +21,11 @@ import { Route as panelRouteRouteImport } from './routes/(panel)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as panelUsersRouteImport } from './routes/(panel)/users'
 import { Route as panelTarjetasRouteImport } from './routes/(panel)/tarjetas'
+import { Route as panelSitiosRouteImport } from './routes/(panel)/sitios'
 import { Route as panelServicesRouteImport } from './routes/(panel)/services'
 import { Route as panelProjectsRouteImport } from './routes/(panel)/projects'
 import { Route as panelPortfolioRouteImport } from './routes/(panel)/portfolio'
+import { Route as panelMiTarjetaRouteImport } from './routes/(panel)/mi-tarjeta'
 import { Route as panelFormularioRouteImport } from './routes/(panel)/formulario'
 import { Route as panelFinanzasRouteImport } from './routes/(panel)/finanzas'
 import { Route as panelDashboardRouteImport } from './routes/(panel)/dashboard'
@@ -89,6 +91,11 @@ const panelTarjetasRoute = panelTarjetasRouteImport.update({
   path: '/tarjetas',
   getParentRoute: () => panelRouteRoute,
 } as any)
+const panelSitiosRoute = panelSitiosRouteImport.update({
+  id: '/sitios',
+  path: '/sitios',
+  getParentRoute: () => panelRouteRoute,
+} as any)
 const panelServicesRoute = panelServicesRouteImport.update({
   id: '/services',
   path: '/services',
@@ -102,6 +109,11 @@ const panelProjectsRoute = panelProjectsRouteImport.update({
 const panelPortfolioRoute = panelPortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => panelRouteRoute,
+} as any)
+const panelMiTarjetaRoute = panelMiTarjetaRouteImport.update({
+  id: '/mi-tarjeta',
+  path: '/mi-tarjeta',
   getParentRoute: () => panelRouteRoute,
 } as any)
 const panelFormularioRoute = panelFormularioRouteImport.update({
@@ -143,9 +155,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof panelDashboardRoute
   '/finanzas': typeof panelFinanzasRoute
   '/formulario': typeof panelFormularioRoute
+  '/mi-tarjeta': typeof panelMiTarjetaRoute
   '/portfolio': typeof panelPortfolioRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
+  '/sitios': typeof panelSitiosRoute
   '/tarjetas': typeof panelTarjetasRoute
   '/users': typeof panelUsersRoute
   '/projects/$projectId': typeof panelProjectsProjectIdRoute
@@ -164,9 +178,11 @@ export interface FileRoutesByTo {
   '/dashboard': typeof panelDashboardRoute
   '/finanzas': typeof panelFinanzasRoute
   '/formulario': typeof panelFormularioRoute
+  '/mi-tarjeta': typeof panelMiTarjetaRoute
   '/portfolio': typeof panelPortfolioRoute
   '/projects': typeof panelProjectsRouteWithChildren
   '/services': typeof panelServicesRoute
+  '/sitios': typeof panelSitiosRoute
   '/tarjetas': typeof panelTarjetasRoute
   '/users': typeof panelUsersRoute
   '/projects/$projectId': typeof panelProjectsProjectIdRoute
@@ -187,9 +203,11 @@ export interface FileRoutesById {
   '/(panel)/dashboard': typeof panelDashboardRoute
   '/(panel)/finanzas': typeof panelFinanzasRoute
   '/(panel)/formulario': typeof panelFormularioRoute
+  '/(panel)/mi-tarjeta': typeof panelMiTarjetaRoute
   '/(panel)/portfolio': typeof panelPortfolioRoute
   '/(panel)/projects': typeof panelProjectsRouteWithChildren
   '/(panel)/services': typeof panelServicesRoute
+  '/(panel)/sitios': typeof panelSitiosRoute
   '/(panel)/tarjetas': typeof panelTarjetasRoute
   '/(panel)/users': typeof panelUsersRoute
   '/(panel)/projects/$projectId': typeof panelProjectsProjectIdRoute
@@ -210,9 +228,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/finanzas'
     | '/formulario'
+    | '/mi-tarjeta'
     | '/portfolio'
     | '/projects'
     | '/services'
+    | '/sitios'
     | '/tarjetas'
     | '/users'
     | '/projects/$projectId'
@@ -231,9 +251,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/finanzas'
     | '/formulario'
+    | '/mi-tarjeta'
     | '/portfolio'
     | '/projects'
     | '/services'
+    | '/sitios'
     | '/tarjetas'
     | '/users'
     | '/projects/$projectId'
@@ -253,9 +275,11 @@ export interface FileRouteTypes {
     | '/(panel)/dashboard'
     | '/(panel)/finanzas'
     | '/(panel)/formulario'
+    | '/(panel)/mi-tarjeta'
     | '/(panel)/portfolio'
     | '/(panel)/projects'
     | '/(panel)/services'
+    | '/(panel)/sitios'
     | '/(panel)/tarjetas'
     | '/(panel)/users'
     | '/(panel)/projects/$projectId'
@@ -361,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof panelTarjetasRouteImport
       parentRoute: typeof panelRouteRoute
     }
+    '/(panel)/sitios': {
+      id: '/(panel)/sitios'
+      path: '/sitios'
+      fullPath: '/sitios'
+      preLoaderRoute: typeof panelSitiosRouteImport
+      parentRoute: typeof panelRouteRoute
+    }
     '/(panel)/services': {
       id: '/(panel)/services'
       path: '/services'
@@ -380,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof panelPortfolioRouteImport
+      parentRoute: typeof panelRouteRoute
+    }
+    '/(panel)/mi-tarjeta': {
+      id: '/(panel)/mi-tarjeta'
+      path: '/mi-tarjeta'
+      fullPath: '/mi-tarjeta'
+      preLoaderRoute: typeof panelMiTarjetaRouteImport
       parentRoute: typeof panelRouteRoute
     }
     '/(panel)/formulario': {
@@ -438,9 +476,11 @@ interface panelRouteRouteChildren {
   panelDashboardRoute: typeof panelDashboardRoute
   panelFinanzasRoute: typeof panelFinanzasRoute
   panelFormularioRoute: typeof panelFormularioRoute
+  panelMiTarjetaRoute: typeof panelMiTarjetaRoute
   panelPortfolioRoute: typeof panelPortfolioRoute
   panelProjectsRoute: typeof panelProjectsRouteWithChildren
   panelServicesRoute: typeof panelServicesRoute
+  panelSitiosRoute: typeof panelSitiosRoute
   panelTarjetasRoute: typeof panelTarjetasRoute
   panelUsersRoute: typeof panelUsersRoute
 }
@@ -449,9 +489,11 @@ const panelRouteRouteChildren: panelRouteRouteChildren = {
   panelDashboardRoute: panelDashboardRoute,
   panelFinanzasRoute: panelFinanzasRoute,
   panelFormularioRoute: panelFormularioRoute,
+  panelMiTarjetaRoute: panelMiTarjetaRoute,
   panelPortfolioRoute: panelPortfolioRoute,
   panelProjectsRoute: panelProjectsRouteWithChildren,
   panelServicesRoute: panelServicesRoute,
+  panelSitiosRoute: panelSitiosRoute,
   panelTarjetasRoute: panelTarjetasRoute,
   panelUsersRoute: panelUsersRoute,
 }

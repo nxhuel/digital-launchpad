@@ -1,0 +1,3 @@
+# Los scripts shell siempre con LF: si entran con CRLF (Windows),
+# el contenedor Linux falla con "no such file or directory" en el shebang.
+*.sh text eol=lf

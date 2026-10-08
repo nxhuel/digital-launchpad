@@ -143,6 +143,36 @@ export interface CardCatalog {
   designs: PublicCardDesign[]
 }
 
+export interface DeployedCardItem {
+  id: number
+  slug: string
+  title: string
+  source_filename: string
+  url: string
+  size_bytes: number
+  client_id: number | null
+  client_name: string | null
+  menu_options: string[]
+  submissions_open: boolean
+  responses_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CardSubmissionItem {
+  id: number
+  card_id: number
+  kind: string
+  payload: Record<string, string | number | boolean | null>
+  created_at: string
+}
+
+export interface ClientUserItem {
+  id: number
+  name: string
+  email: string
+}
+
 export interface FormQuestion {
   id: number
   role: string | null

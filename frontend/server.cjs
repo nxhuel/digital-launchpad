@@ -91,7 +91,8 @@ function sendIndex(res) {
 
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url || '/').split('?')[0])
-  if (urlPath.startsWith('/api/') || urlPath.startsWith('/uploads/')) {
+  const isDeployedCard = urlPath.startsWith('/tarjetas-digitales/') && urlPath !== '/tarjetas-digitales/'
+  if (urlPath.startsWith('/api/') || urlPath.startsWith('/uploads/') || isDeployedCard) {
     return proxy(req, res)
   }
   return serveStatic(req, res, urlPath)

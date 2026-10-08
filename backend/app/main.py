@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.core.config import BASE_DIR, settings
 from backend.app.core.database import engine, Base
-from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog, form_questions, orders, portfolio, monthly_expenses
+from backend.app.routers import auth, services, projects, messages, deliveries, payments, notifications, users, stats, cards, finances, card_catalog, form_questions, orders, portfolio, monthly_expenses, card_deploy
 
 # Ensure db directory exists (solo SQLite necesita un directorio local)
 if settings.DATABASE_URL.startswith("sqlite"):
@@ -75,6 +75,13 @@ app.include_router(orders.public_router, prefix="/api")
 app.include_router(portfolio.router, prefix="/api")
 app.include_router(portfolio.public_router, prefix="/api")
 app.include_router(monthly_expenses.router, prefix="/api")
+app.include_router(card_deploy.router, prefix="/api")
+app.include_router(card_deploy.my_router, prefix="/api")
+app.include_router(card_deploy.card_public_router, prefix="/api")
+# Rutas públicas de tarjetas desplegadas: van ANTES del fallback SPA para que
+# /tarjetas-digitales/<slug> sirva los archivos y no el index.html del panel.
+# La página del catálogo (/tarjetas-digitales exacto) sigue cayendo al SPA.
+app.include_router(card_deploy.serve_router)
 
 # Asegura que las imágenes WebP (generadas por la optimización de uploads)
 # se sirvan con su content-type correcto

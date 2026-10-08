@@ -82,10 +82,76 @@ export async function apiFetch<T = unknown>(
 export function apiUpload<T = unknown>(path: string, file: File): Promise<T> {
   const formData = new FormData()
   formData.append('file', file)
-  const headers: Record<string, string> = {}
-  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
-  return fetch(`${API_BASE}${path}`, { method: 'POST', body: formData, headers }).then(r => {
-    if (!r.ok) throw new Error('Upload failed')
-    return r.json()
-  })
+  return apiUploadForm<T>(path, formData)
+}
+
+function parseErrorPayload(res: Response, payload: unknown): Error & { code?: string; status?: number } {
+  const detail = (payload as { detail?: unknown } | null)?.detail
+  const message =
+    typeof detail === 'string'
+      ? detail
+      : Array.isArray(detail)
+        ? (detail[0]?.msg || `Error ${res.status}`).replace(/^Value error, /, '')
+        : (detail as { message?: string } | undefined)?.message || `Error ${res.status}`
+  const error = new Error(message) as Error & { code?: string; status?: number }
+  error.code = typeof detail === 'object' && !Array.isArray(detail) ? (detail as { code?: string })?.code : undefined
+  error.status = res.status
+  return error
+}
+
+export async function apiDownload(path: string): Promise<Blob> {
+  const doGet = (token: string | null) => {
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    return fetch(`${API_BASE}${path}`, { headers })
+  }
+
+  let res = await doGet(accessToken)
+
+  if (res.status === 401 && refreshToken) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      res = await doGet(newToken)
+    }
+  }
+
+  if (!res.ok) {
+    throw parseErrorPayload(res, await res.json().catch(() => null))
+  }
+  return res.blob()
+}
+
+export async function downloadCsv(path: string, filename: string): Promise<void> {
+  const blob = await apiDownload(path)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+export async function apiUploadForm<T = unknown>(path: string, form: FormData): Promise<T> {
+  const doPost = (token: string | null) => {
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    return fetch(`${API_BASE}${path}`, { method: 'POST', body: form, headers })
+  }
+
+  let res = await doPost(accessToken)
+
+  if (res.status === 401 && refreshToken) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      res = await doPost(newToken)
+    }
+  }
+
+  if (!res.ok) {
+    throw parseErrorPayload(res, await res.json().catch(() => null))
+  }
+  if (res.status === 204) return undefined as T
+  return res.json()
 }

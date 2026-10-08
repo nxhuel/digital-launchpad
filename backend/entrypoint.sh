@@ -15,7 +15,7 @@ print(f"DB URL: {settings.DATABASE_URL}")
 
 # Create tables
 from backend.app.core.database import engine, Base, SessionLocal
-from backend.app.models.models import User, Service, Project, Message, Attachment, DeliveryRecord, Payment, Notification, FinanceEntry, DigitalCard, CardMessage, CardCategory, CardDesign, AuthCode, FormQuestion, PortfolioItem, MonthlyExpense
+from backend.app.models.models import User, Service, Project, Message, Attachment, DeliveryRecord, Payment, Notification, FinanceEntry, DigitalCard, CardMessage, CardCategory, CardDesign, AuthCode, FormQuestion, PortfolioItem, MonthlyExpense, DeployedCard, CardSubmission
 Base.metadata.create_all(bind=engine)
 print("Tables created")
 
@@ -29,6 +29,9 @@ MIGRATIONS = [
     ("users", "token_version", "INTEGER NOT NULL DEFAULT 0"),
     ("card_designs", "discount_label", "VARCHAR(100)"),
     ("projects", "deposit_percentage", "INTEGER"),
+    ("deployed_cards", "client_id", "INTEGER"),
+    ("deployed_cards", "config", "JSON"),
+    ("deployed_cards", "submissions_open", "BOOLEAN NOT NULL DEFAULT TRUE"),
 ]
 # Portfolio items se crea via create_all; si falta la tabla, la crea automáticamente.
 with engine.begin() as conn:

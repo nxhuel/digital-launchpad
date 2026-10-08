@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     IMAGE_QUALITY: int = 80  # calidad WebP (1-100)
     # Offset horario para fechas del libro de finanzas (Argentina UTC-3)
     TIMEZONE_OFFSET_HOURS: int = -3
+    # Cloudinary (fotos de invitados en tarjetas dinámicas; vacío = desactivado)
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
 
     @property
     def cors_origins_list(self) -> List[str]:

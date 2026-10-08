@@ -106,20 +106,26 @@ function WhatsAppFloat() {
 
 function RootComponent() {
   const path = useRouterState({ select: s => s.location.pathname })
+  // Rutas del panel interno y páginas legales: sin TopBar/Header/Footer ni WhatsApp.
+  // OJO: '/tarjetas-digitales/...' (invitaciones públicas) NO entra acá porque
+  // el prefijo exige '/' después de '/tarjetas'.
+  const PANEL_PREFIXES = [
+    '/dashboard',
+    '/projects',
+    '/services',
+    '/users',
+    '/pagar',
+    '/finanzas',
+    '/tarjetas',
+    '/formulario',
+    '/portfolio',
+    '/mi-tarjeta',
+    '/sitios',
+  ]
   const isPanel = path === '/login' ||
-    path.startsWith('/dashboard') ||
-    path.startsWith('/projects') ||
-    path.startsWith('/services') ||
-    path.startsWith('/users') ||
-    path.startsWith('/pagar') ||
-    path.startsWith('/finanzas') ||
-    path === '/tarjetas' ||
-    path.startsWith('/tarjetas/') ||
-    path === '/formulario' ||
-    path.startsWith('/formulario/') ||
-    path === '/portfolio' ||
     path === '/privacidad' ||
-    path === '/terminos'
+    path === '/terminos' ||
+    PANEL_PREFIXES.some(p => path === p || path.startsWith(p + '/'))
 
 
   if (isPanel) {

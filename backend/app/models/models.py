@@ -375,3 +375,47 @@ class AuthCode(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = relationship("User", back_populates="auth_codes")
+
+
+class DeployedCard(Base):
+    """Tarjeta estática desplegada desde un .ZIP (index.html + css/js/assets).
+
+    Los archivos viven en <DEPLOY_DIR>/<slug>/ y se sirven en
+    /tarjetas-digitales/<slug>. Borrar la fila + la carpeta libera el espacio
+    cuando el evento del cliente termina.
+    """
+    __tablename__ = "deployed_cards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    source_filename = Column(String(255), nullable=False, default="")
+    deployed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # Dueño (cliente) de la tarjeta: ve sus respuestas y edita su config
+    client_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    # Config editable (ej: {"menu_options": ["Normal", "Veggie"]}) que la
+    # tarjeta lee vía /api/public/tarjetas/{slug}/config
+    config = Column(JSON, default=dict, nullable=False)
+    # Si es False, el endpoint público de respuestas rechaza envíos
+    submissions_open = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    deployer = relationship("User", foreign_keys=[deployed_by])
+    client = relationship("User", foreign_keys=[client_id])
+    submissions = relationship("CardSubmission", back_populates="card", cascade="all, delete-orphan")
+
+
+class CardSubmission(Base):
+    """Respuesta de un invitado/visitante a una tarjeta dinámica
+    (RSVP, canción, menú, mensaje...). El `kind` indica el tipo y el
+    `payload` JSON lleva los datos libres de cada tarjeta."""
+    __tablename__ = "card_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    card_id = Column(Integer, ForeignKey("deployed_cards.id"), nullable=False, index=True)
+    kind = Column(String(50), nullable=False, index=True)
+    payload = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    card = relationship("DeployedCard", back_populates="submissions")

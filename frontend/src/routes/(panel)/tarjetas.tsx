@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { apiFetch, apiUpload } from '../../lib/api'
 import type { CardCategoryItem, CardDesignItem, User } from '../../types'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, Loader2, ExternalLink, ImageUp, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Loader2, ExternalLink, ImageUp, ChevronUp, ChevronDown, CreditCard } from 'lucide-react'
 
 export const Route = createFileRoute('/(panel)/tarjetas')({
   component: TarjetasPage,
@@ -169,7 +169,7 @@ function TarjetasPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="page-title">Tarjetas digitales</h1>
           <p className="page-subtitle">
@@ -226,7 +226,9 @@ function TarjetasPage() {
         <div className="text-center py-16 text-slate-400">Cargando...</div>
       ) : designs.length === 0 ? (
         <div className="panel-card text-center py-14">
-          <p className="text-3xl mb-3">💳</p>
+          <span className="w-14 h-14 rounded-2xl bg-violet-50 text-violet-500 flex items-center justify-center mx-auto mb-4">
+            <CreditCard className="w-7 h-7" />
+          </span>
           <p className="text-slate-400 mb-4 text-sm">Todavía no subiste tarjetas al catálogo</p>
           <button onClick={() => { setEditing(null); setModalOpen(true) }} className="btn-primary">
             <Plus className="w-4 h-4" /> Subir la primera
@@ -249,7 +251,7 @@ function TarjetasPage() {
                   )}
                   {d.discount_label && (
                     <div className="absolute top-1.5 right-[-40px] z-30 rotate-45 w-[160px] py-0.5 text-center bg-gradient-to-r from-red-600 via-rose-500 to-fuchsia-600 text-white text-[9px] font-black uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis shadow ring-1 ring-white/30 pointer-events-none">
-                      🎀 {d.discount_label}
+                      {d.discount_label}
                     </div>
                   )}
                   {d.tag && (
@@ -331,12 +333,12 @@ function TarjetasPage() {
         onClose={() => { setModalOpen(false); setEditing(null) }}
         onSave={save}
       />
+
     </div>
   )
 }
 
-function DesignModal({
-  open,
+function DesignModal({ open,
   editing,
   categories,
   existingTags,
@@ -502,7 +504,7 @@ function DesignModal({
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
-              <option value="__new__">＋ Crear categoría nueva...</option>
+              <option value="__new__">+ Crear categoría nueva...</option>
             </select>
             {categoryId === '__new__' && (
               <input
@@ -522,7 +524,7 @@ function DesignModal({
               {existingTags.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
-              <option value="__custom__">＋ Otra etiqueta...</option>
+              <option value="__custom__">+ Otra etiqueta...</option>
             </select>
             {tag === '__custom__' && (
               <input
@@ -553,7 +555,7 @@ function DesignModal({
             {discount.trim() && (
               <div className="mt-2 relative w-28 h-24 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
                 <div className="absolute top-1 right-[-38px] z-30 rotate-45 w-[130px] py-0.5 text-center bg-gradient-to-r from-red-600 via-rose-500 to-fuchsia-600 text-white text-[8px] font-black uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis shadow ring-1 ring-white/30">
-                  🎀 {discount}
+                  {discount}
                 </div>
               </div>
             )}
@@ -577,7 +579,7 @@ function DesignModal({
                 <button type="button" onClick={() => fileRef.current?.click()} className="btn-outline text-xs py-2">
                   {file ? 'Cambiar imagen' : 'Seleccionar imagen'}
                 </button>
-                {file && <p className="text-xs text-emerald-600 font-medium">✓ {file.name}</p>}
+                {file && <p className="text-xs text-emerald-600 font-medium">Imagen seleccionada: {file.name}</p>}
                 {editing?.image_url && !file && (
                   <p className="text-xs text-slate-400">Tiene una imagen actual</p>
                 )}

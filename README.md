@@ -10,24 +10,8 @@ Panel interno de gestión de proyectos, clientes, comunicación y pagos.
 
 ## Setup rápido
 
-### Backend
-
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-alembic upgrade head
-python seed.py
-uvicorn backend.app.main:app --reload
-```
-
-### Panel
-
-```bash
-cd panel
-npm install
-npm run dev
+docker-compose up --build -d
 ```
 
 El panel corre en `http://localhost:5173` y el backend en `http://localhost:8000`.
@@ -38,12 +22,6 @@ El panel corre en `http://localhost:5173` y el backend en `http://localhost:8000
 |--------|-----------------------------|------------|
 | Admin  | nahueltisera03@gmail.com    | admin123   |
 | Cliente| lucia@example.com           | cliente123 |
-
-## Tests
-
-```bash
-pytest tests/ -v
-```
 
 ## Estructura
 

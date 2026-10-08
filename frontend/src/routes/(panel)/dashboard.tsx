@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { AdminStats, User } from '../../types'
-import { DollarSign, FolderKanban, Users, Clock, Plus, ChevronRight, Globe } from 'lucide-react'
+import { DollarSign, FolderKanban, Users, Clock, Plus, ChevronRight, ShoppingBag, FileSearch, CheckCircle2 } from 'lucide-react'
 import { Pagination } from '../../components/ui/pagination'
 
 export const Route = createFileRoute('/(panel)/dashboard')({
@@ -188,7 +188,7 @@ function AdminDashboard({ stats }: { stats: AdminStats }) {
 }
 
 /* ═══════════════════════════════════════════
-   CLIENT DASHBOARD
+   CLIENTE · MIS PEDIDOS
 ═══════════════════════════════════════════ */
 function ClientDashboard({ user }: { user: User }) {
   const navigate = useNavigate()
@@ -215,52 +215,67 @@ function ClientDashboard({ user }: { user: User }) {
 
   if (loading) return <div className="text-center py-16 text-slate-400">Cargando...</div>
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Hola, {firstName} 👋</h1>
-          <p className="page-subtitle">Acá están todos tus pedidos.</p>
-        </div>
+  const stats = [
+    { label: 'Pedidos activos', desc: 'En curso con el equipo', value: counts.activos, icon: ShoppingBag, accent: 'bg-violet-100 text-violet-700', highlight: counts.activos > 0 },
+    { label: 'En cotización', desc: 'Esperando precio final', value: counts.cotizados, icon: FileSearch, accent: 'bg-amber-100 text-amber-700', highlight: counts.cotizados > 0 },
+    { label: 'Pedidos completos', desc: 'Trabajos entregados', value: counts.completados, icon: CheckCircle2, accent: 'bg-emerald-100 text-emerald-700', highlight: false },
+  ]
 
-        {/* Un solo botón para cualquier tipo de pedido */}
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="page-title">Hola, {firstName}</h1>
+          <p className="page-subtitle">Acá ves el estado de cada pedido, su cotización y el detalle completo.</p>
+        </div>
         <button
           onClick={() => navigate({ to: '/projects/new' })}
-          className="btn-primary shrink-0"
+          className="btn-primary"
         >
           <Plus className="w-4 h-4" />
           Nuevo pedido
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Pedidos activos', value: counts.activos, highlight: counts.activos > 0 },
-          { label: 'En cotización', value: counts.cotizados, highlight: counts.cotizados > 0 },
-          { label: 'Pedidos completos', value: counts.completados, highlight: false },
-        ].map(c => (
+        {stats.map(s => (
           <div
-            key={c.label}
-            className={`panel-card ${c.highlight ? 'border-violet-200 bg-violet-50/30' : ''}`}
+            key={s.label}
+            className={`panel-card flex items-center gap-4 ${s.highlight ? 'border-violet-200 ring-1 ring-violet-100' : ''}`}
           >
-            <p className="text-sm text-slate-500">{c.label}</p>
-            <p className="text-3xl font-bold text-slate-900 mt-1">{c.value}</p>
+            <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${s.accent}`}>
+              <s.icon className="w-5 h-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-2xl font-bold text-slate-900 leading-none">{s.value}</p>
+              <p className="text-sm font-semibold text-slate-700 mt-1">{s.label}</p>
+              <p className="text-xs text-slate-400">{s.desc}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Pedidos list */}
+      {/* Listado */}
       <div>
-        <h2 className="text-base font-bold text-slate-900 mb-4">Mis pedidos</h2>
+        <h2 className="text-base font-bold text-slate-900 mb-3">
+          Todos los pedidos
+          <span className="ml-2 text-xs font-semibold text-slate-400 bg-slate-100 rounded-full px-2 py-0.5 align-middle">
+            {sorted.length}
+          </span>
+        </h2>
+
         {sorted.length === 0 ? (
-          <div className="panel-card text-center py-10">
-            <Globe className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 mb-4 text-sm">No tenés pedidos todavía</p>
+          <div className="panel-card text-center py-12">
+            <span className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-500 flex items-center justify-center mx-auto mb-3">
+              <ShoppingBag className="w-6 h-6" />
+            </span>
+            <p className="font-semibold text-slate-900">No tenés pedidos todavía</p>
+            <p className="text-slate-400 mb-5 text-sm mt-1">Contanos qué necesitás y te enviamos la cotización.</p>
             <button
               onClick={() => navigate({ to: '/projects/new' })}
-              className="btn-primary"
+              className="btn-primary mx-auto"
             >
               <Plus className="w-4 h-4" />
               Solicitar un pedido
@@ -269,40 +284,57 @@ function ClientDashboard({ user }: { user: User }) {
         ) : (
           <div className="space-y-3">
             {sorted.map(p => (
-              <div
+              <article
                 key={p.id}
                 onClick={() => navigate({ to: `/projects/${p.id}` })}
-                className="panel-card cursor-pointer hover:shadow-md transition-shadow"
+                className="panel-card cursor-pointer hover:shadow-md hover:border-violet-200 transition-all !p-0 overflow-hidden"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-stretch gap-0">
+                  {/* Acento lateral según estado */}
+                  <span
+                    className={`w-1.5 shrink-0 ${
+                      p.status === 'completado' ? 'bg-emerald-400'
+                      : p.status === 'rechazado' ? 'bg-red-300'
+                      : p.status === 'pendiente' ? 'bg-amber-300'
+                      : 'bg-violet-500'
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0 px-5 py-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       <StatusBadge status={p.status} />
                       {p.service?.name && (
                         <span className="text-xs text-slate-400">{p.service.name}</span>
                       )}
+                      <span className="text-xs text-slate-300">·</span>
+                      <span className="text-xs text-slate-400">Pedido #{p.id}</span>
                     </div>
-                    <p className="font-semibold text-slate-900 truncate">{p.title}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="font-bold text-slate-900 text-[15px] truncate">{p.title}</p>
+                    <p className="text-xs text-slate-400 mt-1">
                       Creado el {fmtDate(p.created_at)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {p.admin_price != null && (
+                  <div className="flex items-center gap-4 px-5 py-4 shrink-0 border-l border-slate-100">
+                    {p.admin_price != null ? (
                       <div className="text-right">
-                        <p className="text-[11px] text-slate-400">Precio</p>
-                        <p className="font-bold text-slate-900">{fmt(p.admin_price)}</p>
+                        <p className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cotización</p>
+                        <p className="font-bold text-slate-900 text-lg leading-tight">{fmt(p.admin_price)}</p>
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <p className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cotización</p>
+                        <p className="text-sm font-medium text-amber-600">En revisión</p>
                       </div>
                     )}
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </div>
-
     </div>
   )
 }

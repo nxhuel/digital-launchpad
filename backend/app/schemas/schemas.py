@@ -580,3 +580,79 @@ class PortfolioItemUpdate(UTCBaseModel):
     image_url: Optional[str] = Field(None, max_length=500)
     order: Optional[int] = None
     active: Optional[bool] = None
+
+
+# --- Tarjetas desplegadas (.ZIP) ---
+
+class DeployedCardOut(UTCBaseModel):
+    id: int
+    slug: str
+    title: str
+    source_filename: str
+    url: str = ""
+    size_bytes: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DeployedCardUpdate(UTCBaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+
+
+class DeployedCardRename(UTCBaseModel):
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+
+
+# --- Tarjetas dinámicas (respuestas de invitados + config) ---
+
+SUBMISSION_KINDS = ("rsvp", "cancion", "menu", "mensaje", "otro")
+
+
+class PublicCardConfig(UTCBaseModel):
+    slug: str
+    title: str
+    menu_options: List[str] = []
+    submissions_open: bool = True
+
+
+class SubmissionIn(UTCBaseModel):
+    """Alta pública de respuesta. Acepta `kind` + campos libres de la tarjeta
+    (nombre, asisten, cantidad, menu, cancion, mensaje...)."""
+
+    kind: str = Field(..., min_length=1, max_length=50)
+
+    model_config = {"extra": "allow"}
+
+
+class SubmissionOut(UTCBaseModel):
+    id: int
+    card_id: int
+    kind: str
+    payload: dict
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SubmissionResult(UTCBaseModel):
+    ok: bool = True
+    id: int
+
+
+class DeployedCardConfigUpdate(UTCBaseModel):
+    menu_options: Optional[List[str]] = Field(None, max_length=30)
+    submissions_open: Optional[bool] = None
+
+
+class DeployedCardOwnerUpdate(UTCBaseModel):
+    client_id: Optional[int] = None
+
+
+class DeployedCardDetailOut(DeployedCardOut):
+    client_id: Optional[int] = None
+    client_name: Optional[str] = None
+    menu_options: List[str] = []
+    submissions_open: bool = True
+    responses_count: int = 0

@@ -11,5 +11,6 @@ venv
 test_clik.db
 clik.db
 uploads/*
+deployed_cards/*
 README.md
 contexto_funcional.md
