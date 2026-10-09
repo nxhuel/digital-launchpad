@@ -55,11 +55,8 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
     <section className="mt-24">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-5">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold tracking-widest uppercase text-primary">
-              Preguntas frecuentes
-            </span>
+          <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
+            Preguntas frecuentes
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
             Resolvemos tus <span className="text-gradient">dudas</span>

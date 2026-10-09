@@ -54,7 +54,7 @@ const faqItems: FaqItem[] = [
   {
     question: "¿Qué es el sistema de confirmación propio?",
     answer:
-      "Es un sistema diseñado por nosotros, integrado en tu invitación con el mismo diseño y colores. Permite confirmar sin salir de la invitación y mantiene toda la información ordenada.",
+      "Es un sistema diseñado por nosotros, integrado en clik y vinculado a tu tarjeta digital. Permite confirmar asistencia, número de acompañantes, restricciones alimentarias y cualquier otra información que desees recopilar, sin salir de la invitación.",
   },
   {
     question: "¿Cuál es la diferencia entre confirmar por WhatsApp y usar el sistema propio?",
@@ -83,6 +83,11 @@ const faqItems: FaqItem[] = [
     question: "¿Cómo funciona el 50% de descuento en el Save the Date?",
     answer:
       "Si pedís tu Save the Date junto con tu invitación web, obtenés un 50% de descuento. Podés reservarlo y usarlo más adelante.",
+  },
+  {
+    question: "¿Las tarjetas digitales son para siempre?",
+    answer:
+      "Tu tarjeta está activa sin costo adicional por un lapso de tres meses. Pasado ese tiempo, podés renovarla con un pequeño costo adicional.",
   },
 ];
 
@@ -277,7 +282,6 @@ function TarjetasCatalog() {
               </Link>
 
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6 shadow-elegant animate-fade-in">
-                <Sparkles className="h-4 w-4 text-primary" />
                 <span className="text-xs font-bold tracking-widest uppercase text-white/90">
                   Catálogo Premium
                 </span>

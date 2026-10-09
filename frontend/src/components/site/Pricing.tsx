@@ -9,7 +9,7 @@ const plans = [
     icon: CreditCard,
     title: "Tarjetas Digitales",
     desc: "Invitaciones y regalos interactivos.",
-    price: "Desde $41.000",
+    price: "Desde $60.000",
     suffix: "ARS",
     features: [
       "Catálogo con diseños listos para usar",
@@ -23,7 +23,7 @@ const plans = [
     icon: Globe,
     title: "Soluciones Web",
     desc: "Páginas webs, e-commerce y sistemas a medida.",
-    price: "Desde $80.000",
+    price: "Desde $120.000",
     suffix: "ARS",
     features: [
       "Landing pages hasta sistemas complejos",

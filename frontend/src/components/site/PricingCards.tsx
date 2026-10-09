@@ -150,18 +150,14 @@ export default function PricingCards() {
           <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.05),transparent_65%)]" />
 
           <div className="mb-14 text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold tracking-widest uppercase text-primary">
-                Invitaciones digitales
-              </span>
+            <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">
+              Invitaciones digitales
             </div>
             <h2 className="font-display mb-4 text-3xl font-bold md:text-4xl">
               Elegí el modelo <span className="text-gradient">ideal</span> para tu evento
             </h2>
             <p className="mx-auto max-w-md text-muted-foreground">
-              Tres modelos pensados para cada tipo de evento. Elegí el que mejor se adapte a tus
-              invitados y a la experiencia que querés crear.
+              Tres modelos pensados para cada tipo de evento. 
             </p>
           </div>
 
