@@ -2,11 +2,14 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { apiFetch, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, DeployedCardItem, User } from '../../types'
+import { enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
 import { toast } from 'sonner'
 import {
   Users,
   Images,
   UtensilsCrossed,
+  Music,
+  MessageCircle,
   ExternalLink,
   Copy,
   Check,
@@ -22,7 +25,7 @@ export const Route = createFileRoute('/(panel)/mi-tarjeta')({
   component: MiTarjetaPage,
 })
 
-type Tab = 'invitados' | 'album' | 'menu'
+type Tab = CardFeatureKey
 
 function fmtDateTime(iso: string) {
   try {
@@ -53,11 +56,75 @@ async function copyText(text: string) {
 /* Claves internas de las fotos (Cloudinary) que nunca se muestran al cliente */
 const TECHNICAL_KEYS = ['nombre', 'asisten', 'url', 'thumb_url', 'public_id', 'formato']
 
+/* Lista para las respuestas de texto libre (canciones y mensajes). */
+function TextResponseList({
+  rows,
+  loading,
+  icon: Icon,
+  emptyText,
+  detailKey,
+  onDownload,
+}: {
+  rows: CardSubmissionItem[]
+  loading: boolean
+  icon: typeof Users
+  emptyText: string
+  detailKey: 'cancion' | 'mensaje'
+  onDownload: () => void
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-slate-500">
+          {rows.length} {rows.length === 1 ? 'respuesta' : 'respuestas'}
+        </span>
+        <button onClick={onDownload} className="btn-outline text-xs !py-2 ml-auto">
+          <Download className="w-3.5 h-3.5" /> Excel
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-center py-8 text-slate-400 text-sm">Cargando...</p>
+      ) : rows.length === 0 ? (
+        <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
+          <Icon className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+          <p className="text-sm text-slate-400">{emptyText}</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+          {rows.map(r => {
+            const detail = r.payload[detailKey]
+            return (
+              <li key={r.id} className="flex items-start gap-3 px-4 py-3">
+                <span className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-[11px] font-bold flex items-center justify-center shrink-0 uppercase">
+                  {String(r.payload.nombre || '?').slice(0, 2)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {String(r.payload.nombre || 'Sin nombre')}
+                  </p>
+                  {String(detail ?? '').trim() !== '' && (
+                    <p className="text-sm text-slate-600 break-words mt-0.5">{String(detail)}</p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-1">{fmtDateTime(r.created_at)}</p>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════
    TARJETA INDIVIDUAL · card larga con pestañas
 ═══════════════════════════════════════════ */
 function TarjetaCard({ card }: { card: DeployedCardItem }) {
-  const [tab, setTab] = useState<Tab>('invitados')
+  // El admin elige al subir el ZIP qué secciones tiene la tarjeta: acá solo
+  // mostramos las habilitadas.
+  const featureKeys = enabledFeatures(card.features)
+  const [tab, setTab] = useState<Tab>(featureKeys[0] ?? 'rsvp')
   const [copied, setCopied] = useState(false)
 
   // Invitados (solo confirmaciones)
@@ -75,6 +142,12 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   const [menuText, setMenuText] = useState((card.menu_options || []).join('\n'))
   const [savingMenu, setSavingMenu] = useState(false)
   const [menuOptions, setMenuOptions] = useState<string[]>(card.menu_options || [])
+
+  // Canciones y mensajes (respuestas de texto libre)
+  const [songRows, setSongRows] = useState<CardSubmissionItem[]>([])
+  const [messageRows, setMessageRows] = useState<CardSubmissionItem[]>([])
+  const [loadingSongs, setLoadingSongs] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
 
   const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${card.url}` : card.url
 
@@ -104,14 +177,39 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
     }
   }
 
+  const loadText = async (kind: 'cancion' | 'mensaje') => {
+    const isSong = kind === 'cancion'
+    const setLoading = isSong ? setLoadingSongs : setLoadingMessages
+    const setRows = isSong ? setSongRows : setMessageRows
+    setLoading(true)
+    try {
+      const data = await apiFetch<CardSubmissionItem[]>(
+        `/my-cards/${card.id}/respuestas?kind=${kind}`
+      )
+      setRows(data)
+    } catch {
+      toast.error(isSong ? 'No se pudieron cargar las canciones' : 'No se pudieron cargar los mensajes')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    if (tab === 'invitados' && !loadedTabs.has('invitados')) {
+    if (tab === 'rsvp' && !loadedTabs.has('rsvp')) {
       loadRows()
-      setLoadedTabs(prev => new Set(prev).add('invitados'))
+      setLoadedTabs(prev => new Set(prev).add('rsvp'))
     }
     if (tab === 'album' && !loadedTabs.has('album')) {
       loadFotos()
       setLoadedTabs(prev => new Set(prev).add('album'))
+    }
+    if (tab === 'canciones' && !loadedTabs.has('canciones')) {
+      loadText('cancion')
+      setLoadedTabs(prev => new Set(prev).add('canciones'))
+    }
+    if (tab === 'mensajes' && !loadedTabs.has('mensajes')) {
+      loadText('mensaje')
+      setLoadedTabs(prev => new Set(prev).add('mensajes'))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
@@ -186,11 +284,25 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
     }
   }
 
-  const tabs: { id: Tab; label: string; icon: typeof Users; count?: number }[] = [
-    { id: 'invitados', label: 'Invitados', icon: Users, count: loadedTabs.has('invitados') ? rows.length : undefined },
-    { id: 'album', label: 'Álbum', icon: Images, count: undefined },
+  const downloadKind = async (kind: 'cancion' | 'mensaje') => {
+    try {
+      await downloadCsv(
+        `/my-cards/${card.id}/respuestas.csv?kind=${kind}`,
+        `${kind === 'cancion' ? 'canciones' : 'mensajes'}-${card.slug}.csv`
+      )
+    } catch {
+      toast.error('No se pudo descargar el Excel')
+    }
+  }
+
+  const allTabs: { id: Tab; label: string; icon: typeof Users; count?: number }[] = [
+    { id: 'rsvp', label: 'Invitados', icon: Users, count: loadedTabs.has('rsvp') ? rows.length : undefined },
     { id: 'menu', label: 'Menú', icon: UtensilsCrossed, count: menuOptions.length || undefined },
+    { id: 'canciones', label: 'Canciones', icon: Music, count: loadedTabs.has('canciones') ? songRows.length : undefined },
+    { id: 'mensajes', label: 'Mensajes', icon: MessageCircle, count: loadedTabs.has('mensajes') ? messageRows.length : undefined },
+    { id: 'album', label: 'Álbum', icon: Images, count: undefined },
   ]
+  const tabs = allTabs.filter(t => featureKeys.includes(t.id))
 
   return (
     <article className="panel-card !p-0 overflow-hidden">
@@ -231,13 +343,14 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
           </div>
         </div>
 
-        {/* Pestañas */}
-        <div className="flex gap-1 mt-4 bg-slate-100/80 rounded-xl p-1">
+        {/* Pestañas (solo las secciones habilitadas) */}
+        {tabs.length > 0 && (
+        <div className="flex gap-1 mt-4 bg-slate-100/80 rounded-xl p-1 overflow-x-auto">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex-1 min-w-[7.5rem] whitespace-nowrap flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === t.id ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -253,11 +366,22 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
             </button>
           ))}
         </div>
+        )}
       </div>
 
       <div className="px-5 sm:px-6 py-5">
+        {tabs.length === 0 && (
+          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
+            <Lock className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-400">
+              Esta tarjeta no tiene secciones para gestionar. Si necesitás confirmaciones,
+              canciones, mensajes, álbum o menú, pedile al administrador que las active.
+            </p>
+          </div>
+        )}
+
         {/* ── INVITADOS ── */}
-        {tab === 'invitados' && (
+        {tab === 'rsvp' && featureKeys.includes('rsvp') && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
@@ -349,7 +473,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
         )}
 
         {/* ── ÁLBUM ── */}
-        {tab === 'album' && (
+        {tab === 'album' && featureKeys.includes('album') && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-slate-700">
@@ -439,7 +563,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
         )}
 
         {/* ── MENÚ ── */}
-        {tab === 'menu' && (
+        {tab === 'menu' && featureKeys.includes('menu') && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-slate-700">
@@ -498,6 +622,30 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
             )}
           </div>
         )}
+
+        {/* ── CANCIONES ── */}
+        {tab === 'canciones' && featureKeys.includes('canciones') && (
+          <TextResponseList
+            rows={songRows}
+            loading={loadingSongs}
+            icon={Music}
+            emptyText="Todavía no pidieron canciones desde la tarjeta."
+            detailKey="cancion"
+            onDownload={() => downloadKind('cancion')}
+          />
+        )}
+
+        {/* ── MENSAJES ── */}
+        {tab === 'mensajes' && featureKeys.includes('mensajes') && (
+          <TextResponseList
+            rows={messageRows}
+            loading={loadingMessages}
+            icon={MessageCircle}
+            emptyText="Todavía no dejaron mensajes desde la tarjeta."
+            detailKey="mensaje"
+            onDownload={() => downloadKind('mensaje')}
+          />
+        )}
       </div>
     </article>
   )
@@ -544,7 +692,7 @@ function MiTarjetaPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="page-title">{cards.length > 1 ? 'Tus tarjetas digitales' : 'Tu invitación en vivo'}</h1>
-        <p className="page-subtitle">Seguí las confirmaciones, mirá el álbum y actualizá el menú sin pedir ayuda.</p>
+        <p className="page-subtitle">Seguí las respuestas de tus invitados y gestioná tu tarjeta sin pedir ayuda.</p>
       </div>
 
       {cards.length === 0 ? (

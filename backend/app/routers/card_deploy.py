@@ -34,6 +34,8 @@ from backend.app.core.database import get_db
 from backend.app.core.dependencies import get_current_user, require_admin
 from backend.app.models.models import CardSubmission, DeployedCard, User
 from backend.app.schemas.schemas import (
+    CARD_FEATURES,
+    LEGACY_CARD_FEATURES,
     SUBMISSION_KINDS,
     DeployedCardDetailOut,
     DeployedCardOut,
@@ -182,6 +184,27 @@ def _to_out(card: DeployedCard) -> DeployedCardOut:
     return out
 
 
+def _clean_features(raw: Any) -> List[str]:
+    """Normaliza las secciones habilitadas a claves conocidas, sin repetidos."""
+    if not isinstance(raw, (list, tuple)):
+        return []
+    cleaned: List[str] = []
+    for item in raw:
+        key = str(item).strip().lower()
+        if key in CARD_FEATURES and key not in cleaned:
+            cleaned.append(key)
+    return cleaned
+
+
+def _features(card: DeployedCard) -> List[str]:
+    cfg = card.config if isinstance(card.config, dict) else {}
+    # Tarjetas viejas (sin features) mantienen las secciones que existían
+    # cuando se subieron: no se les activan canciones/mensajes por sorpresa.
+    if "features" not in cfg:
+        return list(LEGACY_CARD_FEATURES)
+    return _clean_features(cfg.get("features"))
+
+
 def _menu_options(card: DeployedCard) -> List[str]:
     cfg = card.config if isinstance(card.config, dict) else {}
     opts = cfg.get("menu_options", [])
@@ -193,6 +216,7 @@ def _to_detail(card: DeployedCard, db: Session) -> DeployedCardDetailOut:
     out.client_id = card.client_id
     out.submissions_open = card.submissions_open
     out.menu_options = _menu_options(card)
+    out.features = _features(card)
     out.responses_count = db.query(CardSubmission).filter(CardSubmission.card_id == card.id).count()
     if card.client_id:
         owner = db.query(User).filter(User.id == card.client_id).first()
@@ -213,6 +237,7 @@ async def upload_card(
     file: UploadFile = File(...),
     slug: Optional[str] = Form(None),
     title: Optional[str] = Form(None),
+    features: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -244,6 +269,10 @@ async def upload_card(
         source_filename=os.path.basename(filename),
         deployed_by=current_user.id,
     )
+    # Secciones tildadas en el checklist. Si no se envía el campo se asumen
+    # todas (compatibilidad); una cadena vacía significa "ninguna".
+    selected = list(CARD_FEATURES) if features is None else _clean_features(features.split(","))
+    card.config = {"features": selected}
     db.add(card)
     db.commit()
     db.refresh(card)
@@ -425,6 +454,7 @@ def public_card_config(slug: str, db: Session = Depends(get_db)):
         slug=card.slug,
         title=card.title,
         menu_options=_menu_options(card),
+        features=_features(card),
         submissions_open=card.submissions_open,
     )
 
@@ -543,7 +573,12 @@ def delete_response(
     return None
 
 
-def _apply_config(card: DeployedCard, menu_options: Optional[List[str]], submissions_open: Optional[bool]):
+def _apply_config(
+    card: DeployedCard,
+    menu_options: Optional[List[str]],
+    submissions_open: Optional[bool],
+    features: Optional[List[str]] = None,
+):
     cfg = dict(card.config) if isinstance(card.config, dict) else {}
     if menu_options is not None:
         cleaned = []
@@ -551,6 +586,8 @@ def _apply_config(card: DeployedCard, menu_options: Optional[List[str]], submiss
             if isinstance(o, str) and o.strip():
                 cleaned.append(o.strip()[:100])
         cfg["menu_options"] = cleaned
+    if features is not None:
+        cfg["features"] = _clean_features(features)
     card.config = cfg
     # Reasignar para que SQLAlchemy detecte el cambio en la columna JSON
     from sqlalchemy.orm.attributes import flag_modified
@@ -567,7 +604,7 @@ def update_config(
     _: User = Depends(require_admin),
 ):
     card = _get_or_404(db, card_id)
-    _apply_config(card, body.menu_options, body.submissions_open)
+    _apply_config(card, body.menu_options, body.submissions_open, body.features)
     db.commit()
     db.refresh(card)
     return _to_detail(card, db)
@@ -658,6 +695,11 @@ def my_card_update_config(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo el administrador puede abrir o cerrar las respuestas",
+        )
+    if body.features is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el administrador puede cambiar las secciones de la tarjeta",
         )
     _apply_config(card, body.menu_options, None)
     db.commit()

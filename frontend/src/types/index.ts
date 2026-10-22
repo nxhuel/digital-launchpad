@@ -153,6 +153,7 @@ export interface DeployedCardItem {
   client_id: number | null
   client_name: string | null
   menu_options: string[]
+  features: string[]
   submissions_open: boolean
   responses_count: number
   created_at: string

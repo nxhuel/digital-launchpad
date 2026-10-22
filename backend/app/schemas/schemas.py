@@ -609,11 +609,23 @@ class DeployedCardRename(UTCBaseModel):
 
 SUBMISSION_KINDS = ("rsvp", "cancion", "menu", "mensaje", "otro")
 
+# Secciones que puede tener una tarjeta desplegada. El admin las tilda al subir
+# el ZIP (y puede cambiarlas después desde Ajustes): el panel del cliente solo
+# muestra las que están habilitadas. Reflejan lo que el contrato de las
+# tarjetas puede generar: rsvp/menu_options, canciones, mensajes y fotos.
+CARD_FEATURES = ("rsvp", "menu", "canciones", "mensajes", "album")
+
+# Tarjetas creadas antes de que existiera el checklist: solo tenían estas
+# secciones. Se usan cuando la config no trae la clave "features" para no
+# activarles de golpe canciones/mensajes que el ZIP no implementa.
+LEGACY_CARD_FEATURES = ("rsvp", "album", "menu")
+
 
 class PublicCardConfig(UTCBaseModel):
     slug: str
     title: str
     menu_options: List[str] = []
+    features: List[str] = []
     submissions_open: bool = True
 
 
@@ -643,6 +655,7 @@ class SubmissionResult(UTCBaseModel):
 
 class DeployedCardConfigUpdate(UTCBaseModel):
     menu_options: Optional[List[str]] = Field(None, max_length=30)
+    features: Optional[List[str]] = Field(None, max_length=len(CARD_FEATURES))
     submissions_open: Optional[bool] = None
 
 
@@ -654,5 +667,6 @@ class DeployedCardDetailOut(DeployedCardOut):
     client_id: Optional[int] = None
     client_name: Optional[str] = None
     menu_options: List[str] = []
+    features: List[str] = []
     submissions_open: bool = True
     responses_count: int = 0

@@ -209,6 +209,76 @@ def test_client_cannot_manage(client, deploy_dir):
     assert client.get("/api/admin/deployed-cards", headers=headers).status_code == 403
 
 
+def test_upload_stores_selected_features(client, admin_token, deploy_dir):
+    resp = upload(client, admin_token, slug="solo-menu", features="menu")
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["features"] == ["menu"]
+    cfg = client.get("/api/public/tarjetas/solo-menu/config").json()
+    assert cfg["features"] == ["menu"]
+
+
+def test_upload_without_features_enables_all(client, admin_token, deploy_dir):
+    # Compatibilidad: los llamados viejos siguen con todas las secciones
+    body = upload(client, admin_token, slug="todas").json()
+    assert body["features"] == ["rsvp", "menu", "canciones", "mensajes", "album"]
+
+
+def test_legacy_card_without_features_keeps_old_sections(client, admin_token, deploy_dir):
+    # Tarjetas viejas (config sin "features") no deberían ganar canciones ni
+    # mensajes que su ZIP no implementa.
+    from backend.app.models.models import DeployedCard
+    from backend.tests.conftest import TestingSessionLocal
+
+    card_id = upload(client, admin_token, slug="vieja").json()["id"]
+    db = TestingSessionLocal()
+    card = db.query(DeployedCard).filter(DeployedCard.id == card_id).first()
+    card.config = {}
+    db.commit()
+    db.close()
+
+    cfg = client.get("/api/public/tarjetas/vieja/config").json()
+    assert cfg["features"] == ["rsvp", "album", "menu"]
+
+
+def test_upload_with_empty_features_disables_all(client, admin_token, deploy_dir):
+    body = upload(client, admin_token, slug="ninguna", features="").json()
+    assert body["features"] == []
+
+
+def test_admin_updates_features_and_unknown_are_ignored(client, admin_token, deploy_dir):
+    card_id = upload(client, admin_token, slug="cambia", features="rsvp").json()["id"]
+    resp = client.patch(
+        f"/api/admin/deployed-cards/{card_id}/config",
+        json={"features": ["album", "otra", "album"]},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["features"] == ["album"]
+    listed = client.get("/api/admin/deployed-cards", headers=auth_headers(admin_token)).json()
+    assert next(c for c in listed if c["id"] == card_id)["features"] == ["album"]
+
+
+def test_client_owner_cannot_change_features(client, admin_token, deploy_dir):
+    email = "solo-admin@test.com"
+    token = register_and_verify(client, email)
+    users = client.get(
+        "/api/admin/users?search=solo-admin", headers=auth_headers(admin_token)
+    ).json()
+    owner_id = [u for u in users if u["email"] == email][0]["id"]
+    card_id = upload(client, admin_token, slug="ajustes", features="rsvp").json()["id"]
+    client.patch(
+        f"/api/admin/deployed-cards/{card_id}/owner",
+        json={"client_id": owner_id},
+        headers=auth_headers(admin_token),
+    )
+    resp = client.patch(
+        f"/api/my-cards/{card_id}/config",
+        json={"features": ["rsvp", "menu"]},
+        headers=auth_headers(token),
+    )
+    assert resp.status_code == 403
+
+
 def test_anonymous_cannot_manage(client, deploy_dir):
     buf = make_zip(BASIC_FILES)
     resp = client.post(

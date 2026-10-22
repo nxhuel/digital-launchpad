@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch, apiUploadForm, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, ClientUserItem, DeployedCardItem, User } from '../../types'
+import { CARD_FEATURES, enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
 import { toast } from 'sonner'
 import {
   Pencil,
@@ -46,6 +47,7 @@ function slugifyClient(text: string): string {
 }
 
 const SLUG_RE = /^[a-z0-9-]{1,100}$/
+const MAX_ZIP_BYTES = 50 * 1024 * 1024
 
 /* ═══════════════════════════════════════════
    PÁGINA
@@ -223,6 +225,22 @@ function SiteCard({
                 <span className="text-slate-400">Sin dueño asignado</span>
               )}
             </div>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {enabledFeatures(item.features).map(key => {
+                const feature = CARD_FEATURES.find(f => f.key === key)
+                return (
+                  <span
+                    key={key}
+                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600"
+                  >
+                    {feature?.label ?? key}
+                  </span>
+                )
+              })}
+              {enabledFeatures(item.features).length === 0 && (
+                <span className="text-xs text-slate-400">Sin secciones para el cliente</span>
+              )}
+            </div>
             {item.menu_options.length > 0 && (
               <p className="text-xs text-slate-400 mt-1.5 truncate">
                 Menú: {item.menu_options.join(' · ')}
@@ -287,13 +305,25 @@ function DeployZipModal({
   const [slug, setSlug] = useState(redeploy ? redeploy.slug : '')
   const [title, setTitle] = useState(redeploy ? redeploy.title : '')
   const [slugTouched, setSlugTouched] = useState(!!redeploy)
+  const [features, setFeatures] = useState<CardFeatureKey[]>([])
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState<DeployedCardItem | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const toggleFeature = (key: CardFeatureKey) =>
+    setFeatures(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+
   const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
+    if (f.size > MAX_ZIP_BYTES) {
+      e.target.value = ''
+      setFile(null)
+      toast.error('El ZIP supera los 50 MB. Optimizá imágenes o videos antes de subirlo.')
+      return
+    }
     setFile(f)
     setResult(null)
     if (!slugTouched) {
@@ -318,6 +348,8 @@ function DeployZipModal({
       if (!redeploy) {
         form.append('slug', finalSlug)
         form.append('title', title.trim() || finalSlug)
+        // Lista (posiblemente vacía) de secciones tildadas en el checklist
+        form.append('features', features.join(','))
       }
       const path = redeploy
         ? `/admin/deployed-cards/${redeploy.id}/redeploy`
@@ -388,6 +420,44 @@ function DeployZipModal({
                   className="panel-input"
                   placeholder="Ej: Casamiento Juli y Riso"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Secciones que ve el cliente
+                </label>
+                <div className="space-y-2">
+                  {CARD_FEATURES.map(f => {
+                    const checked = features.includes(f.key)
+                    return (
+                      <label
+                        key={f.key}
+                        className={`flex items-start gap-3 rounded-xl border px-3.5 py-2.5 cursor-pointer transition-colors ${
+                          checked
+                            ? 'border-violet-300 bg-violet-50/60'
+                            : 'border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleFeature(f.key)}
+                          className="mt-0.5 w-4 h-4 accent-violet-600 shrink-0"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-slate-800">
+                            {f.label}
+                          </span>
+                          <span className="block text-xs text-slate-400">{f.description}</span>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Tildá solo lo que implementaste en el ZIP: el cliente únicamente va a ver esas
+                  secciones en su panel. Podés cambiarlo después desde “Dueño y ajustes”.
+                </p>
               </div>
             </>
           )}
@@ -710,8 +780,14 @@ function AjustesModal({
 }) {
   const [clientId, setClientId] = useState(item.client_id ? String(item.client_id) : '')
   const [menuText, setMenuText] = useState((item.menu_options || []).join('\n'))
+  const [features, setFeatures] = useState<CardFeatureKey[]>(enabledFeatures(item.features))
   const [open, setOpen] = useState(item.submissions_open)
   const [saving, setSaving] = useState(false)
+
+  const toggleFeature = (key: CardFeatureKey) =>
+    setFeatures(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -726,6 +802,7 @@ function AjustesModal({
         method: 'PATCH',
         body: JSON.stringify({
           menu_options: menuText.split('\n').map(s => s.trim()).filter(Boolean),
+          features,
           submissions_open: open,
         }),
       })
@@ -766,18 +843,55 @@ function AjustesModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Opciones del menú</label>
-            <textarea
-              value={menuText}
-              onChange={e => setMenuText(e.target.value)}
-              className="panel-input"
-              rows={4}
-              placeholder={'Normal\nVeggie\nCelíaco\nInfantil'}
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Secciones que ve el cliente
+            </label>
+            <div className="space-y-2">
+              {CARD_FEATURES.map(f => {
+                const checked = features.includes(f.key)
+                return (
+                  <label
+                    key={f.key}
+                    className={`flex items-start gap-3 rounded-xl border px-3.5 py-2.5 cursor-pointer transition-colors ${
+                      checked
+                        ? 'border-violet-300 bg-violet-50/60'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleFeature(f.key)}
+                      className="mt-0.5 w-4 h-4 accent-violet-600 shrink-0"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-slate-800">{f.label}</span>
+                      <span className="block text-xs text-slate-400">{f.description}</span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
             <p className="text-xs text-slate-400 mt-1.5">
-              Una opción por línea. La tarjeta las muestra automáticamente, sin re-subir el ZIP.
+              Se muestran en el panel del cliente. El menú solo aparece si tildás “Menú”.
             </p>
           </div>
+
+          {features.includes('menu') && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Opciones del menú</label>
+              <textarea
+                value={menuText}
+                onChange={e => setMenuText(e.target.value)}
+                className="panel-input"
+                rows={4}
+                placeholder={'Normal\nVeggie\nCelíaco\nInfantil'}
+              />
+              <p className="text-xs text-slate-400 mt-1.5">
+                Una opción por línea. La tarjeta las muestra automáticamente, sin re-subir el ZIP.
+              </p>
+            </div>
+          )}
 
           <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer">
             <span className="text-sm font-medium text-slate-700">
