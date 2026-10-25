@@ -36,7 +36,7 @@ export function RsvpPersonRow({
   return (
     <li className="text-xs">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className={`text-slate-800 ${person.esPrincipal ? 'font-semibold' : 'font-medium'}`}>
+        <span className={`text-slate-800 break-words ${person.esPrincipal ? 'font-semibold' : 'font-medium'}`}>
           {person.nombre}
         </span>
         {showPrincipalChip && person.esPrincipal && (
@@ -52,7 +52,7 @@ export function RsvpPersonRow({
         )}
       </div>
       {person.notas && (
-        <p className="text-[11px] text-slate-500 whitespace-pre-line mt-1 leading-relaxed">
+        <p className="text-[11px] text-slate-500 whitespace-pre-line mt-1 leading-relaxed break-words">
           {normalizeMultiline(person.notas)}
         </p>
       )}

@@ -169,7 +169,7 @@ function PanelLayout() {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 top-11 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
+                <div className="absolute right-0 top-11 w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
                   <div className="p-3 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
                     <span className="font-semibold text-sm text-slate-900">Notificaciones</span>
                     <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ function PanelLayout() {
 
         {/* Page content */}
         <main
-          className="flex-1 overflow-y-auto p-5 lg:p-8"
+          className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8"
           style={{
             backgroundColor: '#f8f8f8',
             backgroundImage: `url(${fondoDashboard})`,

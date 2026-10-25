@@ -1,9 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { apiFetch, apiUploadForm, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, ClientUserItem, DeployedCardItem, User } from '../../types'
 import { CARD_FEATURES, enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
-import { rsvpExtras, rsvpGroup, rsvpGroupCounts, rsvpSummary } from '../../lib/rsvp'
+import {
+  matchLooseTexts,
+  normalizeMultiline,
+  rsvpExtras,
+  rsvpGroup,
+  rsvpGroupCounts,
+  rsvpSummary,
+} from '../../lib/rsvp'
 import { RsvpMenuSummary, RsvpPeopleList, RsvpStatusBadge } from '../../components/panel/RsvpPeople'
 import { toast } from 'sonner'
 import {
@@ -204,7 +211,10 @@ function SitiosPage() {
             Invitaciones publicadas y listas para compartir. Cuando un evento termina, eliminá su tarjeta para liberar espacio.
           </p>
         </div>
-        <button onClick={() => setZipModal({ redeploy: null })} className="btn-primary shrink-0">
+        <button
+          onClick={() => setZipModal({ redeploy: null })}
+          className="btn-primary w-full justify-center sm:w-auto shrink-0"
+        >
           <Upload className="w-4 h-4" /> Subir ZIP
         </button>
       </div>
@@ -305,7 +315,7 @@ function SiteCard({
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-bold text-slate-900 text-lg leading-tight">{item.title}</h3>
+              <h3 className="font-bold text-slate-900 text-lg leading-tight break-words min-w-0">{item.title}</h3>
               {!item.submissions_open && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500">
                   <Lock className="w-3 h-3" /> Cerrada
@@ -357,7 +367,7 @@ function SiteCard({
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary !py-2 shrink-0"
+            className="btn-primary !py-2 w-full justify-center sm:w-auto shrink-0"
           >
             <ExternalLink className="w-3.5 h-3.5" /> Ver tarjeta
           </a>
@@ -385,7 +395,7 @@ function SiteCard({
         </button>
         <button
           onClick={onDelete}
-          className="btn-outline text-xs !bg-white !text-red-600 !border-red-200 hover:!bg-red-50 ml-auto"
+          className="btn-outline text-xs !bg-white !text-red-600 !border-red-200 hover:!bg-red-50 sm:ml-auto"
           title="Eliminar la tarjeta y liberar espacio"
         >
           <Trash2 className="w-3.5 h-3.5" /> Eliminar
@@ -510,29 +520,41 @@ function DeployZipModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 className="font-bold text-slate-900 text-lg">
+        <div className="flex items-start justify-between gap-3 px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <h2 className="font-bold text-slate-900 text-base sm:text-lg leading-snug min-w-0 break-words">
             {redeploy ? `Actualizar "${redeploy.title}"` : 'Publicar nueva tarjeta'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 shrink-0 p-1 -m-1"
+            aria-label="Cerrar"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
+        <form onSubmit={submit} className="px-4 sm:px-6 py-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Archivo .ZIP</label>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <input ref={fileRef} type="file" accept=".zip" className="hidden" onChange={pickFile} />
-              <button type="button" onClick={() => fileRef.current?.click()} className="btn-outline text-xs py-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="btn-outline text-xs py-2 w-full justify-center sm:w-auto"
+              >
                 <Upload className="w-3.5 h-3.5" /> {file ? 'Cambiar archivo' : 'Seleccionar .ZIP'}
               </button>
-              {file && <p className="text-xs text-emerald-600 font-medium truncate">Archivo seleccionado: {file.name}</p>}
+              {file && (
+                <p className="text-xs text-emerald-600 font-medium truncate min-w-0 flex-1">
+                  Archivo seleccionado: {file.name}
+                </p>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-1.5">
               Debe contener index.html en la raíz. Tamaño máximo: 50 MB.
@@ -550,7 +572,7 @@ function DeployZipModal({
                   <input
                     value={slug}
                     onChange={e => { setSlug(e.target.value.toLowerCase()); setSlugTouched(true) }}
-                    className="panel-input rounded-l-none"
+                    className="panel-input rounded-l-none min-w-0"
                     placeholder="nombres-del-evento"
                     required
                   />
@@ -586,21 +608,21 @@ function DeployZipModal({
                 href={result.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-semibold text-emerald-700 hover:underline truncate"
+                className="text-sm font-semibold text-emerald-700 hover:underline truncate min-w-0"
               >
                 {typeof window !== 'undefined' ? window.location.origin : ''}{result.url}
               </a>
             </div>
           )}
 
-          <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="btn-outline">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-slate-100">
+            <button type="button" onClick={onClose} className="btn-outline w-full justify-center sm:w-auto">
               {result ? 'Cerrar' : 'Cancelar'}
             </button>
             <button
               type="submit"
               disabled={saving || !file || detecting}
-              className="btn-primary rounded-lg px-6 disabled:opacity-50"
+              className="btn-primary rounded-lg px-6 w-full justify-center sm:w-auto disabled:opacity-50"
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Subiendo...</> : detecting ? <><Loader2 className="w-4 h-4 animate-spin" /> Detectando...</> : redeploy ? 'Actualizar archivos' : 'Publicar'}
             </button>
@@ -659,19 +681,23 @@ function EditDeployedModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 className="font-bold text-slate-900 text-lg">Editar tarjeta</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="flex items-start justify-between gap-3 px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <h2 className="font-bold text-slate-900 text-base sm:text-lg leading-snug min-w-0 break-words">Editar tarjeta</h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 shrink-0 p-1 -m-1"
+            aria-label="Cerrar"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
+        <form onSubmit={submit} className="px-4 sm:px-6 py-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Título (para el panel)</label>
             <input
@@ -690,7 +716,7 @@ function EditDeployedModal({
               <input
                 value={slug}
                 onChange={e => setSlug(e.target.value.toLowerCase())}
-                className="panel-input rounded-l-none"
+                className="panel-input rounded-l-none min-w-0"
                 required
               />
             </div>
@@ -699,14 +725,14 @@ function EditDeployedModal({
             </p>
           </div>
 
-          <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="btn-outline">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-slate-100">
+            <button type="button" onClick={onClose} className="btn-outline w-full justify-center sm:w-auto">
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary rounded-lg px-6 disabled:opacity-50"
+              className="btn-primary rounded-lg px-6 w-full justify-center sm:w-auto disabled:opacity-50"
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : 'Guardar cambios'}
             </button>
@@ -729,17 +755,15 @@ function RespuestasModal({
   base: string
   onClose: () => void
 }) {
-  const [rows, setRows] = useState<CardSubmissionItem[]>([])
+  const [allRows, setAllRows] = useState<CardSubmissionItem[]>([])
   const [kind, setKind] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const load = async (k: string) => {
+  const load = async () => {
     setLoading(true)
     try {
-      const data = await apiFetch<CardSubmissionItem[]>(
-        `${base}/${item.id}/respuestas${k ? `?kind=${k}` : ''}`
-      )
-      setRows(data)
+      const data = await apiFetch<CardSubmissionItem[]>(`${base}/${item.id}/respuestas`)
+      setAllRows(data)
     } catch {
       toast.error('No se pudieron cargar las respuestas')
     } finally {
@@ -747,15 +771,35 @@ function RespuestasModal({
     }
   }
 
-  useEffect(() => { load(kind) }, [kind])
+  useEffect(() => { load() }, [])
 
-  const rsvp = rsvpSummary(rows)
+  // El filtro es local: necesitamos todas las filas para poder asociar los
+  // mensajes y canciones sueltos con la confirmación del invitado.
+  const rows = useMemo(
+    () => (kind ? allRows.filter(r => r.kind === kind) : allRows),
+    [allRows, kind]
+  )
+  const loose = useMemo(
+    () =>
+      matchLooseTexts(
+        allRows.filter(r => r.kind === 'rsvp'),
+        allRows.filter(r => r.kind === 'mensaje' || r.kind === 'cancion')
+      ),
+    [allRows]
+  )
+  const attachedIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const list of loose.byRsvpId.values()) for (const entry of list) ids.add(entry.id)
+    return ids
+  }, [loose])
+
+  const rsvp = rsvpSummary(allRows)
 
   const remove = async (id: number) => {
     if (!confirm('¿Eliminar esta respuesta?')) return
     await apiFetch(`${base}/${item.id}/respuestas/${id}`, { method: 'DELETE' })
     toast.success('Respuesta eliminada')
-    load(kind)
+    load()
   }
 
   const download = async () => {
@@ -784,51 +828,62 @@ function RespuestasModal({
       .join(' · ')
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <div>
-            <h2 className="font-bold text-slate-900 text-lg">Respuestas · {item.title}</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {rows.length} {rows.length === 1 ? 'respuesta' : 'respuestas'}
-              {rsvp.groups > 0 &&
-                ` · ${rsvp.groups} ${rsvp.groups === 1 ? 'grupo' : 'grupos'}`}
-              {rsvp.groups > 0 &&
-                ` · ${rsvp.declaredPeople} ${rsvp.declaredPeople === 1 ? 'persona' : 'personas'}`}
-              {rsvp.attending > 0 && ` · ${rsvp.attending} asisten`}
-              {rsvp.declined > 0 && ` · ${rsvp.declined} no asisten`}
-              {rsvp.pending > 0 && ` · ${rsvp.pending} sin responder`}
-            </p>
+        <div className="flex items-start justify-between gap-3 px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <div className="min-w-0">
+            <h2 className="font-bold text-slate-900 text-base sm:text-lg leading-snug">
+              Respuestas · {item.title}
+            </h2>
+            {(rsvp.attending > 0 || rsvp.declined > 0 || rsvp.pending > 0) && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                {rsvp.attending > 0 && `${rsvp.attending} asisten`}
+                {rsvp.attending > 0 && (rsvp.declined > 0 || rsvp.pending > 0) && ' · '}
+                {rsvp.declined > 0 && `${rsvp.declined} no asisten`}
+                {rsvp.declined > 0 && rsvp.pending > 0 && ' · '}
+                {rsvp.pending > 0 && `${rsvp.pending} sin responder`}
+              </p>
+            )}
             <RsvpMenuSummary counts={rsvp.menuCounts} className="mt-2" />
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 shrink-0 p-1 -m-1"
+            aria-label="Cerrar"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-6 py-4 flex flex-wrap items-center gap-2">
-          <select value={kind} onChange={e => setKind(e.target.value)} className="panel-input !w-auto">
+        <div className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            value={kind}
+            onChange={e => setKind(e.target.value)}
+            className="panel-input !w-full sm:!w-auto"
+          >
             <option value="">Todos los tipos</option>
             <option value="rsvp">Confirmaciones</option>
-            <option value="cancion">Canciones</option>
             <option value="menu">Menú</option>
-            <option value="mensaje">Mensajes</option>
             <option value="otro">Otros</option>
           </select>
-          <div className="flex gap-2 ml-auto">
-            <button onClick={download} className="btn-outline text-xs py-2">
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
+            <button onClick={download} className="btn-outline text-xs py-2 flex-1 justify-center sm:flex-none">
               <Download className="w-3.5 h-3.5" /> Excel
             </button>
-            <button onClick={downloadPhotos} className="btn-outline text-xs py-2" title="Descargar todas las fotos en un ZIP">
+            <button
+              onClick={downloadPhotos}
+              className="btn-outline text-xs py-2 flex-1 justify-center sm:flex-none"
+              title="Descargar todas las fotos en un ZIP"
+            >
               <Download className="w-3.5 h-3.5" /> Fotos ZIP
             </button>
           </div>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-4 sm:px-6 pb-6">
           {loading ? (
             <p className="text-center py-8 text-slate-400 text-sm">Cargando...</p>
           ) : rows.length === 0 ? (
@@ -840,12 +895,37 @@ function RespuestasModal({
                   const group = rsvpGroup(r)
                   const counts = rsvpGroupCounts(group)
                   const extras = rsvpExtras(r.payload)
+                  const attached = loose.byRsvpId.get(r.id) ?? []
+                  // Deseo y canción, vengan dentro del RSVP o del
+                  // formulario aparte de la tarjeta.
+                  const extraEntries = [
+                    ...extras.map(([label, value]) => ({ key: `payload-${label}`, label, value })),
+                    ...attached
+                      .filter(entry => {
+                        // En esta fila dejamos solo lo que vino en el formulario
+                        // RSVP (canción o deseo). El mensaje tipo deseos,
+                        // que también llega como kind='mensaje', se muestra en
+                        // la fila de Pisos.
+                        if (entry.kind === 'mensaje') return false
+                        const label = entry.kind === 'cancion' ? 'canción' : 'deseo'
+                        return !extras.some(
+                          ([existingLabel, existingValue]) =>
+                            existingLabel.toLowerCase() === label &&
+                            existingValue.trim() === entry.texto.trim()
+                        )
+                      })
+                      .map(entry => ({
+                        key: `loose-${entry.id}`,
+                        label: entry.kind === 'cancion' ? 'canción' : 'deseo',
+                        value: entry.texto,
+                      })),
+                  ]
                   return (
                     <div key={r.id} className="px-4 py-3 space-y-2.5">
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900">{group.nombre}</p>
+                            <p className="text-sm font-semibold text-slate-900 break-words">{group.nombre}</p>
                             <RsvpStatusBadge asisten={group.asisten} />
                             <span className="text-[10px] uppercase tracking-wider font-bold text-violet-600 bg-violet-50 rounded px-1.5 py-0.5">
                               rsvp
@@ -862,8 +942,12 @@ function RespuestasModal({
                             {counts.declined > 0 && <span>· {counts.declined} no asisten</span>}
                             {counts.pending > 0 && <span>· {counts.pending} sin responder</span>}
                             {group.menu && <span>· Menú principal: {group.menu}</span>}
-                            {group.notas && <span>· {group.notas}</span>}
                           </div>
+                          {group.notas && (
+                            <p className="text-xs text-slate-500 whitespace-pre-line leading-relaxed mt-1">
+                              {normalizeMultiline(group.notas)}
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={() => remove(r.id)}
@@ -883,10 +967,17 @@ function RespuestasModal({
                         </div>
                       )}
 
-                      {extras.length > 0 && (
-                        <p className="text-xs text-slate-500">
-                          {extras.map(([key, value]) => `${key}: ${value}`).join(' · ')}
-                        </p>
+                      {extraEntries.length > 0 && (
+                        <dl className="space-y-1.5">
+                          {extraEntries.map(entry => (
+                            <div key={entry.key} className="text-xs">
+                              <dt className="text-slate-400 capitalize">{entry.label}:</dt>
+                              <dd className="text-slate-700 font-medium break-words whitespace-pre-line leading-relaxed mt-0.5">
+                                {normalizeMultiline(entry.value)}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
                       )}
                       <p className="text-[11px] text-slate-400">
                         {new Date(r.created_at).toLocaleString('es-AR')}
@@ -894,6 +985,10 @@ function RespuestasModal({
                     </div>
                   )
                 }
+
+                // Los mensajes y canciones sueltos ya se muestran dentro de
+                // la fila del invitado al que se asociaron.
+                if (attachedIds.has(r.id)) return null
 
                 return (
                   <div key={r.id} className="flex items-start gap-3 px-4 py-2.5">
@@ -995,19 +1090,25 @@ function AjustesModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 className="font-bold text-slate-900 text-lg">Dueño y ajustes · {item.title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="flex items-start justify-between gap-3 px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <h2 className="font-bold text-slate-900 text-base sm:text-lg leading-snug min-w-0 break-words">
+            Dueño y ajustes · {item.title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 shrink-0 p-1 -m-1"
+            aria-label="Cerrar"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
+        <form onSubmit={submit} className="px-4 sm:px-6 py-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Dueño (cliente)</label>
             <select value={clientId} onChange={e => setClientId(e.target.value)} className="panel-input">
@@ -1088,14 +1189,14 @@ function AjustesModal({
             />
           </label>
 
-          <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="btn-outline">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-slate-100">
+            <button type="button" onClick={onClose} className="btn-outline w-full justify-center sm:w-auto">
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary rounded-lg px-6 disabled:opacity-50"
+              className="btn-primary rounded-lg px-6 w-full justify-center sm:w-auto disabled:opacity-50"
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : 'Guardar ajustes'}
             </button>

@@ -25,7 +25,13 @@ export const RSVP_PAYLOAD_LABELS: Record<string, string> = {
   menu: 'menú',
   notas: 'notas',
   cancion: 'canción',
+  tema: 'canción',
+  // Mensaje que se llena dentro del formulario RSVP (se muestra como "Mensaje").
   mensaje: 'mensaje',
+  // Dedicatoria / deseo enviado aparte (formulario de deseos).
+  dedicatoria: 'dedicatoria',
+  deseo: 'deseo',
+  deseos: 'deseos',
 }
 
 export interface RsvpPerson {
@@ -106,8 +112,8 @@ function toCount(value: unknown): number {
 }
 
 /**
- * Cantidad de acompañantes declarada por el invitado.
- * Compatibilidad con tarjetas viejas que solo mandan `cantidad`.
+ * Valor crudo de `cantidad`. En el contrato nuevo son acompañantes; las
+ * tarjetas viejas de este proyecto lo usaban como total de asistentes.
  */
 export function companionCount(payload: RsvpPayload): number {
   return toCount(payload.cantidad)
@@ -120,6 +126,45 @@ function rawCompanions(payload: RsvpPayload): unknown[] {
     if (Array.isArray(value)) return value
   }
   return []
+}
+
+/** ¿La tarjeta usa el contrato nuevo? Aun una lista vacía es explícita. */
+function hasCanonicalCompanionList(payload: RsvpPayload): boolean {
+  return COMPANION_KEYS.some(key => Array.isArray(payload[key]))
+}
+
+/**
+ * Las primeras tarjetas no mandaban `acompañantes`: guardaban los nombres y
+ * estados dentro de `mensaje` con este formato:
+ *   Invitado 1: Ana Pérez — No asiste
+ *   Invitado 2: Luis Pérez — Sí, asiste
+ * Al abrir una respuesta vieja, reconstruimos esas personas para que el
+ * resumen y el detalle no dependan de texto libre.
+ */
+const LEGACY_COMPANION_LINE =
+  /^\s*Invitado\s+\d+\s*:\s*(.*)\s*[—–-]\s*(S[ií],?\s*asiste|No\s+asiste)\s*$/i
+
+function legacyCompanionsFromMessage(value: unknown): RsvpPerson[] {
+  const message = toTextOrNull(value)
+  if (!message) return []
+
+  const companions: RsvpPerson[] = []
+  for (const line of normalizeMultiline(message).split('\n')) {
+    const match = line.match(LEGACY_COMPANION_LINE)
+    if (!match) continue
+    const nombre = match[1].trim() || `Acompañante ${companions.length + 1}`
+    const asisten = /^s[ií],?\s*asiste$/i.test(match[2].trim())
+    companions.push({
+      nombre,
+      asisten,
+      menu: null,
+      notas: null,
+      esPrincipal: false,
+      sinDetalle: false,
+    })
+    if (companions.length >= 20) break
+  }
+  return companions
 }
 
 function companionFromRaw(value: unknown, index: number): RsvpPerson {
@@ -145,27 +190,41 @@ function companionFromRaw(value: unknown, index: number): RsvpPerson {
 
 /**
  * Normaliza una respuesta RSVP a un grupo: el invitado principal + sus
- * acompañantes. Si la tarjeta vieja solo mandó `cantidad`, se crean
- * acompañantes sintéticos que heredan el estado del principal.
+ * acompañantes. Si la tarjeta vieja guardó el detalle en `mensaje`, se
+ * reconstruye; si solo mandó `cantidad`, se crean acompañantes sintéticos
+ * (descontando al principal) para no inflar el conteo de asistentes.
  */
 export function rsvpGroup(row: CardSubmissionItem): RsvpGroup {
   const payload: RsvpPayload = isRecord(row.payload) ? row.payload : {}
   const nombre = toTextOrNull(payload.nombre) ?? 'Sin nombre'
   const asisten = toBoolOrNull(payload.asisten)
   const menu = toTextOrNull(payload.menu)
+  const canonicalList = hasCanonicalCompanionList(payload)
   const raw = rawCompanions(payload)
-  const hasCompanionDetail = raw.length > 0 || COMPANION_KEYS.some(key => Array.isArray(payload[key]))
+  const detailedCompanions = raw.map((item, index) => companionFromRaw(item, index))
+  const companions = canonicalList
+    ? detailedCompanions
+    : legacyCompanionsFromMessage(payload.mensaje)
+  const hasCompanionDetail = companions.length > 0
 
-  const companions = raw.map((item, index) => companionFromRaw(item, index))
-  const legacyCount = companionCount(payload)
-  const declaredCompanions = Math.max(companions.length, legacyCount)
+  // Las tarjetas nuevas mandan `acompañantes` (aunque sea []): esa lista es la
+  // fuente de verdad y `cantidad` no agrega personas fantasma.
+  // Las tarjetas viejas de este proyecto mandaban `cantidad` como TOTAL de
+  // personas que asisten (principal incluido) y el detalle en `mensaje`. Si no
+  // pudimos reconstruir ese detalle, descontamos al principal para no inflar
+  // el resumen. El contrato nuevo sigue siendo `cantidad = acompañantes`.
+  const legacyTotal = companionCount(payload)
+  const syntheticCount =
+    !canonicalList && !hasCompanionDetail && asisten === true
+      ? Math.min(20, Math.max(0, legacyTotal - 1))
+      : 0
+  const declaredCompanions = companions.length + syntheticCount
 
-  // Si hay `cantidad` pero no detalle (o el detalle está incompleto), completamos
-  // para no perder personas en los totales. Sin detalle heredan el estado del
-  // principal, que era el comportamiento de las tarjetas anteriores.
-  for (let i = companions.length; i < declaredCompanions; i++) {
+  // Solo los casos viejos sin detalle quedan como sintéticos; heredan el
+  // estado del principal porque la tarjeta vieja solo contaba asistentes.
+  for (let i = 0; i < syntheticCount; i++) {
     companions.push({
-      nombre: `Acompañante ${i + 1}`,
+      nombre: `Acompañante ${companions.length + 1}`,
       asisten,
       menu: null,
       notas: null,
@@ -250,6 +309,145 @@ export function rsvpSummary(rows: CardSubmissionItem[]): RsvpSummary {
   }
 
   return summary
+}
+
+/**
+ * Texto libre que la tarjeta manda en un formulario aparte del RSVP
+ * (las secciones "deseos"/"canciones" del HTML). Llega como kind="mensaje" o
+ * kind="cancion" y muchas veces sin nombre, así que hay que asociarlo a la
+ * confirmación del invitado por fecha/hora.
+ */
+export interface LooseText {
+  id: number
+  kind: 'mensaje' | 'cancion'
+  texto: string
+  created_at: string
+}
+
+export interface LooseTextMatch {
+  /** Textos asociados a una confirmación, por id de la fila RSVP. */
+  byRsvpId: Map<number, LooseText[]>
+  /** Textos que no pudieron asociarse a ninguna confirmación. */
+  orphans: LooseText[]
+}
+
+/** Ventana para considerar dos envíos como parte de la misma visita a la tarjeta. */
+const SAME_SESSION_MS = 60 * 60 * 1000
+
+/** ¿El texto es solo el detalle de acompañantes que guardaban las tarjetas viejas? */
+function isLegacyCompanionList(text: string): boolean {
+  const lines = normalizeMultiline(text)
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+  return lines.length > 0 && lines.every(line => LEGACY_COMPANION_LINE.test(line))
+}
+
+function nameKey(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
+/** Nombres con los que las tarjetas mandan la dedicatoria o la canción. */
+const LOOSE_TEXT_KEYS: Record<'mensaje' | 'cancion', string[]> = {
+  mensaje: ['mensaje', 'dedicatoria', 'deseo', 'deseos', 'texto'],
+  cancion: ['cancion', 'canción', 'tema', 'musica', 'música'],
+}
+
+function looseText(payload: RsvpPayload, kind: 'mensaje' | 'cancion'): string | null {
+  for (const key of LOOSE_TEXT_KEYS[kind]) {
+    const text = toTextOrNull(payload[key])
+    if (text) return text
+  }
+  return null
+}
+
+function timestamp(value: string): number {
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) ? time : Number.NaN
+}
+
+/**
+ * Asocia los textos sueltos a la confirmación más cercana en el tiempo.
+ * Prioridad: mismo nombre (si la tarjeta lo manda) y, si no, el envío más
+ * próximo dentro de la misma visita. Lo que queda lejos no se adivina: vuelve
+ * en `orphans` para mostrarlo aparte y no perder la dedicatoria.
+ */
+export function matchLooseTexts(
+  rsvpRows: CardSubmissionItem[],
+  looseRows: CardSubmissionItem[],
+): LooseTextMatch {
+  const byRsvpId = new Map<number, LooseText[]>()
+  const orphans: LooseText[] = []
+
+  const candidates = rsvpRows.map(row => {
+    const payload: RsvpPayload = isRecord(row.payload) ? row.payload : {}
+    return {
+      id: row.id,
+      key: nameKey(payload.nombre),
+      time: timestamp(row.created_at),
+    }
+  })
+
+  const nearest = (pool: typeof candidates, time: number): { id: number; delta: number } | null => {
+    if (!Number.isFinite(time)) return null
+    let best: { id: number; delta: number } | null = null
+    for (const candidate of pool) {
+      if (!Number.isFinite(candidate.time)) continue
+      const delta = Math.abs(candidate.time - time)
+      if (!best || delta < best.delta) best = { id: candidate.id, delta }
+    }
+    return best
+  }
+
+  for (const row of looseRows) {
+    if (row.kind !== 'mensaje' && row.kind !== 'cancion') continue
+    const payload: RsvpPayload = isRecord(row.payload) ? row.payload : {}
+    const texto = looseText(payload, row.kind)
+    if (!texto) continue
+    // Las tarjetas viejas escribían la lista de acompañantes en `mensaje`:
+    // eso no es una dedicatoria ni un deseo.
+    if (row.kind === 'mensaje' && isLegacyCompanionList(texto)) continue
+    // El mensaje que viene dentro del formulario RSVP (el campo `mensaje` del
+    // bibitorio) no lo consideramos dedicatoria: ese es el Mensaje del panel.
+    if (row.kind === 'mensaje' && row.payload.nombre) continue
+
+    const time = timestamp(row.created_at)
+    const key = nameKey(payload.nombre)
+    const sameName = key ? candidates.filter(candidate => candidate.key === key) : []
+    let target: number | null = null
+    if (sameName.length > 0) {
+      // Si la tarjeta manda el nombre, ese dato manda: la fila del invitado es
+      // la del mismo nombre (la más cercana si repitió la confirmación).
+      target = nearest(sameName, time)?.id ?? sameName[0].id
+    } else {
+      const close = nearest(candidates, time)
+      target = close && close.delta <= SAME_SESSION_MS ? close.id : null
+    }
+
+    const entry: LooseText = {
+      id: row.id,
+      kind: row.kind,
+      texto,
+      created_at: row.created_at,
+    }
+
+    if (target === null) {
+      orphans.push(entry)
+    } else {
+      byRsvpId.set(target, [...(byRsvpId.get(target) ?? []), entry])
+    }
+  }
+
+  for (const entries of byRsvpId.values()) {
+    entries.sort((a, b) => a.created_at.localeCompare(b.created_at))
+  }
+
+  return { byRsvpId, orphans }
 }
 
 /** Campos extra del grupo (canción, mensaje, etc.) listos para mostrar. */

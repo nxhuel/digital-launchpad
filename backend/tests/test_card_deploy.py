@@ -237,12 +237,12 @@ def test_upload_stores_selected_features(client, admin_token, deploy_dir):
 def test_upload_without_features_enables_all(client, admin_token, deploy_dir):
     # Compatibilidad: los llamados viejos siguen con todas las secciones
     body = upload(client, admin_token, slug="todas").json()
-    assert body["features"] == ["rsvp", "menu", "canciones", "mensajes", "album"]
+    assert body["features"] == ["rsvp", "menu", "album"]
 
 
 def test_legacy_card_without_features_keeps_old_sections(client, admin_token, deploy_dir):
-    # Tarjetas viejas (config sin "features") no deberían ganar canciones ni
-    # mensajes que su ZIP no implementa.
+    # Tarjetas viejas (config sin "features") no deberían ganar secciones
+    # que su ZIP no implementa.
     from backend.app.models.models import DeployedCard
     from backend.tests.conftest import TestingSessionLocal
 
@@ -271,13 +271,16 @@ def test_detect_features_from_zip(client, admin_token, deploy_dir):
     )
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert body["features"] == ["rsvp", "menu", "canciones", "album"]
+    assert body["features"] == ["rsvp", "menu", "album"]
     assert body["sources"]["rsvp"] == ["script.js"]
     assert body["sources"]["album"] == ["script.js"]
+    assert "canciones" not in body["features"]
     assert "mensajes" not in body["features"]
 
 
-def test_detect_features_finds_messages_and_ignores_static_cards(client, admin_token, deploy_dir):
+def test_detect_features_ignores_legacy_song_and_message_posts(client, admin_token, deploy_dir):
+    # Las tarjetas nuevas mandan canción/mensaje dentro del RSVP. Los POST
+    # sueltos se aceptan por compatibilidad, pero no crean secciones nuevas.
     files = {
         **DETECTABLE_FILES,
         "script.js": DETECTABLE_FILES["script.js"]
@@ -290,7 +293,7 @@ def test_detect_features_finds_messages_and_ignores_static_cards(client, admin_t
         headers=auth_headers(admin_token),
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["features"] == ["rsvp", "menu", "canciones", "mensajes", "album"]
+    assert resp.json()["features"] == ["rsvp", "menu", "album"]
 
     buf = make_zip(BASIC_FILES)
     resp = client.post(
@@ -323,9 +326,10 @@ def test_redeploy_updates_features(client, admin_token, deploy_dir):
         headers=auth_headers(admin_token),
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["features"] == ["album", "mensajes"]
+    # "mensajes" ya no es una sección válida: se ignora sin romper la Request.
+    assert resp.json()["features"] == ["album"]
     cfg = client.get("/api/public/tarjetas/redetecta/config").json()
-    assert cfg["features"] == ["album", "mensajes"]
+    assert cfg["features"] == ["album"]
 
 
 def test_admin_updates_features_and_unknown_are_ignored(client, admin_token, deploy_dir):

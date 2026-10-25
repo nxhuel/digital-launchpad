@@ -19,7 +19,7 @@ BASE: /api/public/tarjetas/{slug}
      "slug": "nombre-evento",
      "title": "Casamiento de Ana y Juan",
      "menu_options": ["Normal", "Veggie", "Celíaco", "Infantil"],
-     "features": ["rsvp", "menu", "canciones", "mensajes", "album"],
+     "features": ["rsvp", "menu", "album"],
      "submissions_open": true
    }
    - Con menu_options se arman las opciones de los campos "menú" del invitado principal y de cada acompañante.
@@ -62,6 +62,7 @@ BASE: /api/public/tarjetas/{slug}
      * notas (string | null): aclaración libre, máximo 300 caracteres. Opcional.
    - cancion (string | null): canción pedida por el grupo. Opcional, máximo 300 caracteres.
    - mensaje (string | null): dedicatoria del grupo. Opcional, máximo 1000 caracteres.
+   - IMPORTANTE: canción y mensaje viajan DENTRO de este mismo POST RSVP. No crees secciones, formularios ni endpoints separados para canciones o mensajes.
    - No agregues objetos anidados dentro de un acompañante. No agregues arrays dentro de un acompañante.
    - El payload completo debe pesar menos de 32 KB.
 
@@ -78,6 +79,7 @@ BASE: /api/public/tarjetas/{slug}
    - Debajo, un botón "Agregar acompañante" que agrega una fila nueva. Cada fila debe tener: nombre, estado (Asiste / No asiste / Sin responder), menú, notas y un botón para quitarla.
    - No obligues a completar estado, menú ni notas de los acompañantes.
    - Si el usuario agrega un acompañante, pedile el nombre antes de enviar; si está vacío, mostrá un error claro y no envíes.
+   - Incluí siempre un campo de dedicatoria (mensaje) en este mismo formulario: es lo que los dueños leen en la columna Detalles de su panel. No lo armes como sección aparte.
    - Usá radios, selects o botones de estado; no uses un checkbox para representar tres estados.
    - El select de menú debe construirse con menu_options del config.
    - Antes de enviar, armá el JSON respetando los tipos: cantidad = acompañantes.length; asisten booleano o null; menu string o null; notas string o null.
@@ -86,15 +88,7 @@ BASE: /api/public/tarjetas/{slug}
    - Errores: 400 = confirmaciones cerradas; 422 = datos inválidos; 429 = demasiados intentos; 404 = tarjeta inexistente. Mostrá un mensaje claro y permití reintentar.
    - Si submissions_open es false, no muestres el formulario: mostrá "Las confirmaciones están cerradas".
 
-3. CANCIONES Y MENSAJES SUELTOS (sin RSVP):
-   POST {BASE}/respuestas
-   Content-Type: application/json
-   - Canción suelta: {kind:"cancion", nombre, cancion}
-   - Mensaje suelto: {kind:"mensaje", nombre, mensaje}
-   - nombre es string, cancion/mensaje son strings. Mismos códigos de error que RSVP.
-   - Mostrá éxito/error y deshabilitá el botón al enviar.
-
-4. FOTOS (álbum de invitados):
+3. FOTOS (álbum de invitados):
    POST {BASE}/fotos
    multipart/form-data con campos: file (imagen JPG/PNG/WEBP, máx. 10 MB) + nombre (opcional).
    - Input sugerido: <input type="file" accept="image/*"> (abre la cámara en el celular).
@@ -104,9 +98,7 @@ BASE: /api/public/tarjetas/{slug}
 
 DETECCIÓN AUTOMÁTICA DE SECCIONES:
 - El panel detecta qué secciones implementa el ZIP leyendo index.html, styles.css y script.js. Para que funcione, dejá los literales del contrato visibles en el código:
-  * kind:"rsvp" en el POST de confirmación.
-  * kind:"cancion" en el formulario de canciones.
-  * kind:"mensaje" en el formulario de mensajes.
+  * kind:"rsvp" en el POST de confirmación (el mismo POST incluye canción y mensaje).
   * /fotos en la subida de fotos del álbum.
   * menu_options al construir los selectores de menú.
 - No ofusques ni armes esos valores dinámicamente si eso hace desaparecer el literal del archivo.
@@ -115,9 +107,9 @@ DETECCIÓN AUTOMÁTICA DE SECCIONES:
 EJEMPLO DE FLUJO COMPLETO:
 1. Al cargar: GET {BASE}/config.
 2. Si submissions_open === false: mostrar "Las confirmaciones están cerradas" y ocultar formularios.
-3. Armar el formulario RSVP con el principal + botón "Agregar acompañante".
+3. Armar el formulario RSVP con el principal + botón "Agregar acompañante", más la dedicatoria (mensaje) y, si el diseño lo pide, la canción en ese mismo formulario.
 4. Al enviar: validar nombre del principal y nombres de acompañantes agregados.
-5. POST {BASE}/respuestas con el JSON del grupo.
+5. POST {BASE}/respuestas con el JSON del grupo (incluyendo cancion/mensaje si corresponde).
 6. Si 201: mostrar éxito y limpiar el formulario.
 7. Si error: mostrar el mensaje correspondiente y reactivar el botón.
 
@@ -127,5 +119,6 @@ NO HAGAS:
 - No uses frameworks ni CDN salvo Google Fonts.
 - No mandes cantidad como total de personas.
 - No obligues a responder estado, menú o notas.
+- No crees secciones ni POST separados de canciones o mensajes: van dentro del RSVP.
 - No inventes endpoints ni campos fuera de este contrato.
 - No anides objetos/arrays dentro de un acompañante.

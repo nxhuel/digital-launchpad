@@ -3,15 +3,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { apiFetch, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, DeployedCardItem, User } from '../../types'
 import { enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
-import { normalizeMultiline, rsvpExtras, rsvpGroup, rsvpGroupCounts, rsvpSummary } from '../../lib/rsvp'
-import { RsvpMenuSummary, RsvpPeopleList, RsvpStatusBadge } from '../../components/panel/RsvpPeople'
+import {
+  matchLooseTexts,
+  normalizeMultiline,
+  rsvpExtras,
+  rsvpGroup,
+  rsvpSummary,
+} from '../../lib/rsvp'
+import { RsvpMenuSummary, RsvpStatusBadge, RsvpPeopleList } from '../../components/panel/RsvpPeople'
 import { toast } from 'sonner'
 import {
   Users,
   Images,
   UtensilsCrossed,
-  Music,
-  MessageCircle,
   ExternalLink,
   Copy,
   Check,
@@ -55,69 +59,6 @@ async function copyText(text: string) {
   }
 }
 
-/* Lista para las respuestas de texto libre (canciones y mensajes). */
-function TextResponseList({
-  rows,
-  loading,
-  icon: Icon,
-  emptyText,
-  detailKey,
-  onDownload,
-}: {
-  rows: CardSubmissionItem[]
-  loading: boolean
-  icon: typeof Users
-  emptyText: string
-  detailKey: 'cancion' | 'mensaje'
-  onDownload: () => void
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500">
-          {rows.length} {rows.length === 1 ? 'respuesta' : 'respuestas'}
-        </span>
-        <button onClick={onDownload} className="btn-outline text-xs !py-2 ml-auto">
-          <Download className="w-3.5 h-3.5" /> Excel
-        </button>
-      </div>
-
-      {loading ? (
-        <p className="text-center py-8 text-slate-400 text-sm">Cargando...</p>
-      ) : rows.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
-          <Icon className="w-7 h-7 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-400">{emptyText}</p>
-        </div>
-      ) : (
-        <ul className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
-          {rows.map(r => {
-            const detail = normalizeMultiline(r.payload[detailKey]).trim()
-            return (
-              <li key={r.id} className="flex items-start gap-3 px-4 py-3">
-                <span className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-[11px] font-bold flex items-center justify-center shrink-0 uppercase">
-                  {String(r.payload.nombre || '?').slice(0, 2)}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {String(r.payload.nombre || 'Sin nombre')}
-                  </p>
-                  {detail && (
-                    <p className="text-sm text-slate-600 break-words whitespace-pre-line leading-relaxed mt-0.5">
-                      {detail}
-                    </p>
-                  )}
-                  <p className="text-[11px] text-slate-400 mt-1">{fmtDateTime(r.created_at)}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </div>
-  )
-}
-
 /* ═══════════════════════════════════════════
    TARJETA INDIVIDUAL · card larga con pestañas
 ═══════════════════════════════════════════ */
@@ -133,6 +74,10 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   const [loadingRows, setLoadingRows] = useState(false)
   const [loadedTabs, setLoadedTabs] = useState<Set<Tab>>(new Set())
 
+  // Textos que la tarjeta manda en formularios aparte (kind="mensaje" /
+  // "cancion", casi siempre sin nombre): se muestran en la fila del invitado.
+  const [looseRows, setLooseRows] = useState<CardSubmissionItem[]>([])
+
   // Álbum
   const [fotos, setFotos] = useState<CardSubmissionItem[]>([])
   const [loadingFotos, setLoadingFotos] = useState(false)
@@ -144,21 +89,15 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   const [savingMenu, setSavingMenu] = useState(false)
   const [menuOptions, setMenuOptions] = useState<string[]>(card.menu_options || [])
 
-  // Canciones y mensajes (respuestas de texto libre)
-  const [songRows, setSongRows] = useState<CardSubmissionItem[]>([])
-  const [messageRows, setMessageRows] = useState<CardSubmissionItem[]>([])
-  const [loadingSongs, setLoadingSongs] = useState(false)
-  const [loadingMessages, setLoadingMessages] = useState(false)
-
   const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${card.url}` : card.url
 
   const loadRows = async () => {
     setLoadingRows(true)
     try {
-      const data = await apiFetch<CardSubmissionItem[]>(
-        `/my-cards/${card.id}/respuestas?kind=rsvp`
-      )
+      // Una sola consulta: confirmaciones + textos sueltos de la tarjeta.
+      const data = await apiFetch<CardSubmissionItem[]>(`/my-cards/${card.id}/respuestas`)
       setRows(data.filter(r => r.kind === 'rsvp'))
+      setLooseRows(data.filter(r => r.kind === 'mensaje' || r.kind === 'cancion'))
     } catch {
       toast.error('No se pudieron cargar los invitados')
     } finally {
@@ -178,23 +117,6 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
     }
   }
 
-  const loadText = async (kind: 'cancion' | 'mensaje') => {
-    const isSong = kind === 'cancion'
-    const setLoading = isSong ? setLoadingSongs : setLoadingMessages
-    const setRows = isSong ? setSongRows : setMessageRows
-    setLoading(true)
-    try {
-      const data = await apiFetch<CardSubmissionItem[]>(
-        `/my-cards/${card.id}/respuestas?kind=${kind}`
-      )
-      setRows(data)
-    } catch {
-      toast.error(isSong ? 'No se pudieron cargar las canciones' : 'No se pudieron cargar los mensajes')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     if (tab === 'rsvp' && !loadedTabs.has('rsvp')) {
       loadRows()
@@ -204,18 +126,11 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
       loadFotos()
       setLoadedTabs(prev => new Set(prev).add('album'))
     }
-    if (tab === 'canciones' && !loadedTabs.has('canciones')) {
-      loadText('cancion')
-      setLoadedTabs(prev => new Set(prev).add('canciones'))
-    }
-    if (tab === 'mensajes' && !loadedTabs.has('mensajes')) {
-      loadText('mensaje')
-      setLoadedTabs(prev => new Set(prev).add('mensajes'))
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
   const rsvp = useMemo(() => rsvpSummary(rows), [rows])
+  const loose = useMemo(() => matchLooseTexts(rows, looseRows), [rows, looseRows])
 
   const copy = async () => {
     await copyText(fullUrl)
@@ -227,7 +142,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   const download = async () => {
     try {
       await downloadCsv(
-        `/my-cards/${card.id}/respuestas.csv`,
+        `/my-cards/${card.id}/respuestas.csv?kind=rsvp`,
         `invitados-${card.slug}.csv`
       )
     } catch {
@@ -284,25 +199,12 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
     }
   }
 
-  const downloadKind = async (kind: 'cancion' | 'mensaje') => {
-    try {
-      await downloadCsv(
-        `/my-cards/${card.id}/respuestas.csv?kind=${kind}`,
-        `${kind === 'cancion' ? 'canciones' : 'mensajes'}-${card.slug}.csv`
-      )
-    } catch {
-      toast.error('No se pudo descargar el Excel')
-    }
-  }
-
-  const allTabs: { id: Tab; label: string; icon: typeof Users; count?: number }[] = [
-    { id: 'rsvp', label: 'Invitados', icon: Users, count: loadedTabs.has('rsvp') ? rsvp.attending : undefined },
-    { id: 'menu', label: 'Menú', icon: UtensilsCrossed, count: menuOptions.length || undefined },
-    { id: 'canciones', label: 'Canciones', icon: Music, count: loadedTabs.has('canciones') ? songRows.length : undefined },
-    { id: 'mensajes', label: 'Mensajes', icon: MessageCircle, count: loadedTabs.has('mensajes') ? messageRows.length : undefined },
-    { id: 'album', label: 'Álbum', icon: Images, count: undefined },
+  const allTabs: { id: Tab; label: string; icon: typeof Users; feature: CardFeatureKey }[] = [
+    { id: 'rsvp', label: 'Invitados', icon: Users, feature: 'rsvp' },
+    { id: 'menu', label: 'Menú', icon: UtensilsCrossed, feature: 'menu' },
+    { id: 'album', label: 'Álbum', icon: Images, feature: 'album' },
   ]
-  const tabs = allTabs.filter(t => featureKeys.includes(t.id))
+  const tabs = allTabs.filter(t => featureKeys.includes(t.feature))
 
   return (
     <article className="panel-card !p-0 overflow-hidden">
@@ -323,20 +225,21 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
               )}
             </div>
             <p className="text-xs text-slate-400 mt-1 truncate font-mono">{fullUrl}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {card.responses_count} {card.responses_count === 1 ? 'respuesta registrada' : 'respuestas registradas'}
-            </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
             <a
               href={card.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary !py-2"
+              className="btn-primary !py-2 flex-1 justify-center sm:flex-none"
             >
               <ExternalLink className="w-3.5 h-3.5" /> Ver tarjeta
             </a>
-            <button onClick={copy} className="btn-outline !py-2" title="Copiar enlace">
+            <button
+              onClick={copy}
+              className="btn-outline !py-2 flex-1 justify-center sm:flex-none"
+              title="Copiar enlace"
+            >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
@@ -345,24 +248,17 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
 
         {/* Pestañas (solo las secciones habilitadas) */}
         {tabs.length > 0 && (
-        <div className="flex gap-1 mt-4 bg-slate-100/80 rounded-xl p-1 overflow-x-auto">
+        <div className="grid grid-cols-1 gap-1 mt-4 bg-slate-100/80 rounded-xl p-1 sm:flex">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 min-w-[7.5rem] whitespace-nowrap flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`w-full sm:flex-1 sm:min-w-[7.5rem] whitespace-nowrap flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === t.id ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <t.icon className="w-4 h-4" />
               {t.label}
-              {t.count != null && t.count > 0 && (
-                <span className={`text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center ${
-                  tab === t.id ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {t.count}
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -375,7 +271,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
             <Lock className="w-7 h-7 text-slate-300 mx-auto mb-2" />
             <p className="text-sm text-slate-400">
               Esta tarjeta no tiene secciones para gestionar. Si necesitás confirmaciones,
-              canciones, mensajes, álbum o menú, pedile al administrador que las active.
+              álbum o menú, pedile al administrador que las active.
             </p>
           </div>
         )}
@@ -388,27 +284,12 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                 <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                   {rsvp.attending} {rsvp.attending === 1 ? 'persona asiste' : 'personas asisten'}
                 </span>
-                <span className="px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
-                  {rsvp.groups} {rsvp.groups === 1 ? 'grupo' : 'grupos'} · {rsvp.declaredPeople}{' '}
-                  {rsvp.declaredPeople === 1 ? 'persona' : 'personas'}
-                </span>
-                {rsvp.companions > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200">
-                    {rsvp.companions} {rsvp.companions === 1 ? 'acompañante' : 'acompañantes'}
-                  </span>
-                )}
-                {rsvp.declined > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-                    {rsvp.declined} no {rsvp.declined === 1 ? 'asiste' : 'asisten'}
-                  </span>
-                )}
-                {rsvp.pending > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                    {rsvp.pending} sin responder
-                  </span>
-                )}
+
               </div>
-              <button onClick={download} className="btn-outline text-xs !py-2 ml-auto">
+              <button
+                onClick={download}
+                className="btn-outline text-xs !py-2 flex-1 justify-center sm:flex-none sm:ml-auto"
+              >
                 <Download className="w-3.5 h-3.5" /> Excel
               </button>
             </div>
@@ -416,14 +297,14 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
 
             {loadingRows ? (
               <p className="text-center py-8 text-slate-400 text-sm">Cargando invitados...</p>
-            ) : rows.length === 0 ? (
+            ) : rows.length === 0 && loose.orphans.length === 0 ? (
               <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
                 <Users className="w-7 h-7 text-slate-300 mx-auto mb-2" />
                 <p className="text-sm text-slate-400">Todavía no hay confirmaciones. Compartí el enlace de tu tarjeta.</p>
               </div>
             ) : (
-              <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
-                <table className="w-full text-sm min-w-[560px]">
+              <div className="border border-slate-200 rounded-xl overflow-hidden md:overflow-x-auto">
+                <table className="rsvp-table w-full text-sm md:min-w-[560px]">
                   <thead>
                     <tr className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-400">
                       <th className="px-4 py-2.5 font-semibold">Invitado</th>
@@ -435,33 +316,43 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                   <tbody className="divide-y divide-slate-100">
                     {rows.map(r => {
                       const group = rsvpGroup(r)
-                      const counts = rsvpGroupCounts(group)
                       const extras = rsvpExtras(r.payload)
+                      const attached = loose.byRsvpId.get(r.id) ?? []
+                      // Lo que la tarjeta mandó en el formulario de deseos o de
+                      // canciones se muestra en esta misma fila.
+                      const extraEntries = [
+                        ...extras.map(([label, value]) => ({ key: `payload-${label}`, label, value })),
+                        ...attached
+                      .filter(entry => {
+                        // En esta fila dejamos solo lo que vino en el formulario
+                        // RSVP (canción o deseo). El mensaje tipo deseos,
+                        // que también llega como kind='mensaje', se muestra en
+                        // la fila de Pisos.
+                        if (entry.kind === 'mensaje') return false
+                        const label = entry.kind === 'cancion' ? 'canción' : 'deseo'
+                        return !extras.some(
+                          ([existingLabel, existingValue]) =>
+                            existingLabel.toLowerCase() === label &&
+                            existingValue.trim() === entry.texto.trim()
+                        )
+                      })
+                      .map(entry => ({
+                        key: `loose-${entry.id}`,
+                        label: entry.kind === 'cancion' ? 'canción' : 'deseo',
+                        value: entry.texto,
+                      })),
+                      ]
                       return (
                         <tr key={r.id} className="hover:bg-slate-50/60 align-top">
-                          <td className="px-4 py-3">
+                          <td data-label="Invitado" className="px-4 py-3">
                             <div className="min-w-0">
-                              <span className="font-semibold text-slate-900">{group.nombre}</span>
-                              <p className="text-[11px] text-slate-400">
-                                {group.declaredCompanions > 0
-                                  ? `${group.declaredCompanions} ${
-                                      group.declaredCompanions === 1 ? 'acompañante' : 'acompañantes'
-                                    }`
-                                  : 'Sin acompañantes'}
-                              </p>
+                              <span className="font-semibold text-slate-900 break-words">{group.nombre}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="space-y-1">
-                              <RsvpStatusBadge asisten={group.asisten} />
-                              <p className="text-[11px] text-slate-400">
-                                {counts.attending} asisten
-                                {counts.declined > 0 && ` · ${counts.declined} no asisten`}
-                                {counts.pending > 0 && ` · ${counts.pending} sin responder`}
-                              </p>
-                            </div>
+                          <td data-label="Estado" className="px-4 py-3 whitespace-nowrap">
+                            <RsvpStatusBadge asisten={group.asisten} />
                           </td>
-                          <td className="px-4 py-3">
+                          <td data-label="Detalles" className="px-4 py-3">
                             <div className="space-y-2">
                               {group.notas && (
                                 <p className="text-xs text-slate-500 whitespace-pre-line leading-relaxed">
@@ -471,37 +362,72 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                               {group.menu && (
                                 <p className="text-xs text-slate-600">Menú principal: {group.menu}</p>
                               )}
-                              {group.companions.length > 0 && (
-                                <RsvpPeopleList
-                                  group={group}
-                                  includeMain={false}
-                                  showLegacyNote={false}
-                                />
-                              )}
-                              {extras.length > 0 && (
+                              {extraEntries.length > 0 && (
                                 <dl className="space-y-1.5">
-                                  {extras.map(([key, value]) => (
-                                    <div key={key} className="text-xs">
-                                      <dt className="text-slate-400 capitalize">{key}:</dt>
+                                  {extraEntries.map(entry => (
+                                    <div key={entry.key} className="text-xs">
+                                      <dt className="text-slate-400 capitalize">{entry.label}:</dt>
                                       <dd className="text-slate-700 font-medium break-words whitespace-pre-line leading-relaxed mt-0.5">
-                                        {normalizeMultiline(value)}
+                                        {normalizeMultiline(entry.value)}
                                       </dd>
                                     </div>
                                   ))}
                                 </dl>
                               )}
+                              {group.companions.length > 0 && (
+                                <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 mt-2">
+                                  <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5">
+                                    Subinvitados
+                                  </p>
+                                  <RsvpPeopleList group={group} includeMain={false} showLegacyNote={false} />
+                                </div>
+                              )}
                               {group.companions.length === 0 &&
                                 !group.menu &&
                                 !group.notas &&
-                                extras.length === 0 && <span className="text-slate-300">—</span>}
+                                extraEntries.length === 0 && <span className="text-slate-300">—</span>}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-[11px] text-slate-400">
+                          <td data-label="Fecha" className="px-4 py-3 text-right whitespace-nowrap text-[11px] text-slate-400">
                             {fmtDateTime(r.created_at)}
                           </td>
                         </tr>
                       )
                     })}
+
+                    {/* Textos que no se pudieron asociar a ninguna confirmación. */}
+                    {loose.orphans.map(entry => (
+                      <tr key={`orphan-${entry.id}`} className="hover:bg-slate-50/60 align-top">
+                        <td data-label="Invitado" className="px-4 py-3">
+                          <div className="min-w-0">
+                            <span className="font-semibold text-slate-900">Sin nombre</span>
+                            <p className="text-[11px] text-slate-400">
+                              {entry.kind === 'cancion'
+                                ? 'Canción enviada por separado'
+                                : 'Deseo enviado por separado'}
+                            </p>
+                          </div>
+                        </td>
+                        <td data-label="Estado" className="px-4 py-3 text-slate-400 text-xs">
+                          —
+                        </td>
+                        <td data-label="Detalles" className="px-4 py-3">
+                          <div className="space-y-2">
+                            <div className="text-xs">
+                              <p className="text-slate-400 capitalize">
+                                {entry.kind === 'cancion' ? 'canción:' : 'deseo:'}
+                              </p>
+                              <p className="text-slate-700 font-medium break-words whitespace-pre-line leading-relaxed mt-0.5">
+                                {normalizeMultiline(entry.texto)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td data-label="Fecha" className="px-4 py-3 text-right whitespace-nowrap text-[11px] text-slate-400">
+                          {fmtDateTime(entry.created_at)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -517,16 +443,19 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                 Fotos que subieron tus invitados
                 <span className="block text-xs font-normal text-slate-400">Tildá las que quieras descargar, o bajalas todas juntas.</span>
               </p>
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
                 <button
                   onClick={downloadSelected}
                   disabled={selected.size === 0}
-                  className="btn-primary !py-2 text-xs disabled:opacity-40"
+                  className="btn-primary !py-2 text-xs flex-1 justify-center sm:flex-none disabled:opacity-40"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Descargar selección{selected.size > 0 ? ` (${selected.size})` : ''}
                 </button>
-                <button onClick={downloadFotos} className="btn-outline text-xs !py-2">
+                <button
+                  onClick={downloadFotos}
+                  className="btn-outline text-xs !py-2 flex-1 justify-center sm:flex-none"
+                >
                   <Download className="w-3.5 h-3.5" /> Descargar todas (.zip)
                 </button>
               </div>
@@ -609,7 +538,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
               </p>
               <button
                 onClick={() => setEditingMenu(v => !v)}
-                className="btn-outline text-xs !py-2 ml-auto"
+                className="btn-outline text-xs !py-2 ml-auto shrink-0"
               >
                 {editingMenu ? <X className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                 {editingMenu ? 'Cerrar edición' : 'Editar menú'}
@@ -658,30 +587,6 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
               </div>
             )}
           </div>
-        )}
-
-        {/* ── CANCIONES ── */}
-        {tab === 'canciones' && featureKeys.includes('canciones') && (
-          <TextResponseList
-            rows={songRows}
-            loading={loadingSongs}
-            icon={Music}
-            emptyText="Todavía no pidieron canciones desde la tarjeta."
-            detailKey="cancion"
-            onDownload={() => downloadKind('cancion')}
-          />
-        )}
-
-        {/* ── MENSAJES ── */}
-        {tab === 'mensajes' && featureKeys.includes('mensajes') && (
-          <TextResponseList
-            rows={messageRows}
-            loading={loadingMessages}
-            icon={MessageCircle}
-            emptyText="Todavía no dejaron mensajes desde la tarjeta."
-            detailKey="mensaje"
-            onDownload={() => downloadKind('mensaje')}
-          />
         )}
       </div>
     </article>

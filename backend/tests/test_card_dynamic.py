@@ -53,6 +53,9 @@ def test_submit_rsvp_with_companion_details(client, admin_token, deploy_dir):
         "nombre": "Juan Pérez",
         "asisten": True,
         "menu": "Normal",
+        # Aunque una tarjeta vieja mande un total equivocado, con detalle
+        # individual la lista de acompañantes es la fuente de verdad.
+        "cantidad": 5,
         "acompañantes": [
             {"nombre": "Ana Pérez", "asisten": True, "menu": "Veggie"},
             {"nombre": "Luis Pérez", "asisten": False},
@@ -75,6 +78,57 @@ def test_submit_rsvp_with_companion_details(client, admin_token, deploy_dir):
     assert payload["acompañantes"][1]["asisten"] is False
     assert payload["acompañantes"][2]["asisten"] is None
 
+    # La notificación cuenta personas reales, no el `cantidad` viejo.
+    notifs = client.get("/api/notifications", headers=headers).json()
+    assert any("por 4 personas" in n["body"] for n in notifs)
+
+
+def test_legacy_message_companions_feed_notification_and_csv(client, admin_token, deploy_dir):
+    card_id = upload(client, admin_token, slug="legacy").json()["id"]
+    resp = _submit(client, "legacy", {
+        "kind": "rsvp",
+        "nombre": "Nahuel",
+        "asisten": True,
+        # Tarjeta vieja: `cantidad` era el total de asistentes (principal
+        # incluido) y el detalle viajaba dentro de `mensaje`.
+        "cantidad": 2,
+        "mensaje": (
+            "Restricción alimentaria: sin sal\n"
+            "Invitado 1: Ana Pérez — No asiste\n"
+            "Invitado 2: Luis Pérez — Sí, asiste"
+        ),
+    })
+    assert resp.status_code == 201, resp.text
+
+    headers = auth_headers(admin_token)
+    notifs = client.get("/api/notifications", headers=headers).json()
+    body = next(n["body"] for n in notifs if "Nahuel" in n["body"])
+    # El grupo tiene 3 personas; no 1 + el `cantidad` viejo (que ya incluía
+    # al principal y solo contaba asistentes).
+    assert "por 3 personas" in body
+
+    csv_resp = client.get(
+        f"/api/admin/deployed-cards/{card_id}/respuestas.csv", headers=headers
+    )
+    assert csv_resp.status_code == 200
+    text = csv_resp.text
+    assert "Acompañante 1 · Nombre" in text
+    assert "Ana Pérez" in text
+    assert "Luis Pérez" in text
+
+
+def test_legacy_solo_attendee_is_not_double_counted(client, admin_token, deploy_dir):
+    upload(client, admin_token, slug="solo")
+    resp = _submit(client, "solo", {
+        "kind": "rsvp", "nombre": "Ana", "asisten": True, "cantidad": 1,
+    })
+    assert resp.status_code == 201, resp.text
+
+    headers = auth_headers(admin_token)
+    notifs = client.get("/api/notifications", headers=headers).json()
+    body = next(n["body"] for n in notifs if "Ana" in n["body"])
+    assert "por 2 personas" not in body
+
 
 def test_export_csv_flattens_companions(client, admin_token, deploy_dir):
     card_id = upload(client, admin_token, slug="boda").json()["id"]
@@ -93,8 +147,8 @@ def test_export_csv_flattens_companions(client, admin_token, deploy_dir):
     )
     assert resp.status_code == 200
     text = resp.text
-    assert "acompañante_1_nombre" in text
-    assert "acompañante_1_menu" in text
+    assert "Acompañante 1 · Nombre" in text
+    assert "Acompañante 1 · Menú" in text
     assert "Ana Pérez" in text
     assert "Veggie" in text
 
@@ -147,12 +201,14 @@ def test_export_csv(client, admin_token, deploy_dir):
     assert resp.status_code == 200
     assert "text/csv" in resp.headers["content-type"]
     text = resp.text
-    assert "nombre" in text and "Ana" in text
+    # El export respeta las columnas del panel (con tildes y BOM UTF-8).
+    assert text.startswith("\ufeff")
+    assert "Invitado" in text and "Ana" in text
     # filtro por kind
     only = client.get(
         f"/api/admin/deployed-cards/{card_id}/respuestas.csv?kind=cancion", headers=headers
     )
-    assert "cancion" in only.text
+    assert "Canción" in only.text
 
 
 def test_delete_response(client, admin_token, deploy_dir):
