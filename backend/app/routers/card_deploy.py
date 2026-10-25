@@ -9,6 +9,8 @@ ABM completo: alta (upload), listado, edición de título, renombre del slug
 """
 import io
 import csv
+import json
+import logging
 import mimetypes
 import os
 import re
@@ -18,7 +20,7 @@ import time
 import unicodedata
 import zipfile
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cloudinary
 import cloudinary.uploader
@@ -32,7 +34,13 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import BASE_DIR, settings
 from backend.app.core.database import get_db
 from backend.app.core.dependencies import get_current_user, require_admin
-from backend.app.models.models import CardSubmission, DeployedCard, User
+from backend.app.models.models import (
+    CardSubmission,
+    DeployedCard,
+    Notification,
+    NotificationKind,
+    User,
+)
 from backend.app.schemas.schemas import (
     CARD_FEATURES,
     LEGACY_CARD_FEATURES,
@@ -43,6 +51,7 @@ from backend.app.schemas.schemas import (
     DeployedCardConfigUpdate,
     DeployedCardRename,
     DeployedCardUpdate,
+    FeatureDetectionOut,
     PublicCardConfig,
     SubmissionIn,
     SubmissionOut,
@@ -147,6 +156,71 @@ def _validate_zip(content: bytes) -> List[zipfile.ZipInfo]:
                 detail="El ZIP debe contener index.html en la raíz",
             )
         return clean
+
+
+# ─── Detección automática de secciones ───────────────────────────────────────
+# Solo se inspeccionan archivos de texto del ZIP (HTML/JS/CSS). El contrato de
+# las tarjetas es explícito, así que buscamos los literales que realmente usa
+# la tarjeta para llamar a la API. No se ejecuta nada del ZIP.
+DETECT_TEXT_EXTENSIONS = {".html", ".htm", ".js", ".mjs", ".css"}
+DETECT_MAX_FILE_BYTES = 2 * 1024 * 1024
+DETECT_MAX_TOTAL_BYTES = 6 * 1024 * 1024
+
+_KIND_VALUE = r"['\"`]\s*{}\s*['\"`]"
+_FEATURE_PATTERNS: Dict[str, List[re.Pattern]] = {
+    "rsvp": [re.compile(r"['\"]?kind['\"]?\s*[:=]\s*" + _KIND_VALUE.format("rsvp"), re.I)],
+    "canciones": [re.compile(r"['\"]?kind['\"]?\s*[:=]\s*" + _KIND_VALUE.format("cancion"), re.I)],
+    "mensajes": [re.compile(r"['\"]?kind['\"]?\s*[:=]\s*" + _KIND_VALUE.format("mensaje"), re.I)],
+    "album": [re.compile(r"/fotos\b", re.I)],
+    "menu": [re.compile(r"\bmenu_options\b|\bmenuOptions\b", re.I)],
+}
+
+
+def _detect_features_from_files(files: Dict[str, str]) -> Tuple[List[str], Dict[str, List[str]]]:
+    """Devuelve las secciones detectadas y en qué archivos se encontraron."""
+    sources: Dict[str, List[str]] = {}
+    for feature, patterns in _FEATURE_PATTERNS.items():
+        hits = [
+            filename
+            for filename, text in files.items()
+            if any(pattern.search(text) for pattern in patterns)
+        ]
+        if hits:
+            sources[feature] = sorted(hits)
+    features = [feature for feature in CARD_FEATURES if feature in sources]
+    return features, sources
+
+
+def _zip_text_files(content: bytes) -> Dict[str, str]:
+    """Lee los archivos de texto relevantes del ZIP, sin extraerlo a disco."""
+    files: Dict[str, str] = {}
+    total = 0
+    infos = _validate_zip(content)
+    with zipfile.ZipFile(io.BytesIO(content)) as zf:
+        for info in infos:
+            ext = os.path.splitext(info.filename)[1].lower()
+            if ext not in DETECT_TEXT_EXTENSIONS:
+                continue
+            if info.file_size > DETECT_MAX_FILE_BYTES:
+                continue
+            total += info.file_size
+            if total > DETECT_MAX_TOTAL_BYTES:
+                break
+            try:
+                raw = zf.read(info.filename)
+            except (KeyError, OSError):
+                continue
+            try:
+                text = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                text = raw.decode("latin-1", errors="ignore")
+            if text:
+                files[info.filename] = text
+    return files
+
+
+def _detect_features_from_zip(content: bytes) -> Tuple[List[str], Dict[str, List[str]]]:
+    return _detect_features_from_files(_zip_text_files(content))
 
 
 def _extract_to_slug(content: bytes, slug: str) -> None:
@@ -279,6 +353,32 @@ async def upload_card(
     return _to_detail(card, db)
 
 
+@router.post("/detect-features", response_model=FeatureDetectionOut)
+async def detect_features(
+    file: UploadFile = File(...),
+    _: User = Depends(require_admin),
+):
+    """Detecta las secciones que implementa un ZIP antes de publicarlo.
+
+    Se usa desde el checklist del panel para tildar automáticamente las
+    secciones. No modifica nada ni extrae archivos: solo lee el ZIP.
+    """
+    filename = file.filename or ""
+    if not filename.lower().endswith(".zip"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El archivo debe ser un .ZIP",
+        )
+    content = await file.read()
+    if len(content) > MAX_ZIP_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El ZIP supera el máximo permitido (50 MB)",
+        )
+    features, sources = _detect_features_from_zip(content)
+    return FeatureDetectionOut(features=features, sources=sources)
+
+
 @router.get("", response_model=List[DeployedCardDetailOut])
 def list_cards(db: Session = Depends(get_db), _: User = Depends(require_admin)):
     cards = db.query(DeployedCard).order_by(DeployedCard.created_at.desc()).all()
@@ -329,6 +429,7 @@ def rename_card(
 async def redeploy_card(
     card_id: int,
     file: UploadFile = File(...),
+    features: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -348,6 +449,11 @@ async def redeploy_card(
     _validate_zip(content)
     _extract_to_slug(content, card.slug)
     card.source_filename = os.path.basename(filename)
+    # El panel manda las secciones detectadas en el ZIP nuevo. Si un cliente
+    # de la API no manda `features`, se mantienen las que ya tenía la tarjeta.
+    if features is not None:
+        cfg = card.config if isinstance(card.config, dict) else {}
+        card.config = {**cfg, "features": _clean_features(features.split(","))}
     db.commit()
     db.refresh(card)
     return _to_detail(card, db)
@@ -411,7 +517,7 @@ def serve_deployed_card(slug: str, file_path: str = ""):
 _submit_attempts: Dict[str, list] = defaultdict(list)
 SUBMIT_WINDOW = 60
 SUBMIT_LIMIT = 20
-MAX_PAYLOAD_BYTES = 8 * 1024
+MAX_PAYLOAD_BYTES = 32 * 1024
 
 
 def _submit_rate_limit(key: str):
@@ -432,19 +538,139 @@ def _get_card_or_404(db: Session, slug: str) -> DeployedCard:
     return card
 
 
+_MISSING = object()
+MAX_NESTED_ITEMS = 30
+MAX_NESTED_KEYS = 20
+
+
+def _clean_scalar(value: Any) -> Any:
+    """Normaliza un valor escalar de un payload. Devuelve _MISSING si no sirve."""
+    if isinstance(value, str):
+        return value.strip()[:2000]
+    if isinstance(value, (int, float, bool)) or value is None:
+        return value
+    return _MISSING
+
+
+def _clean_companion(item: Any) -> Optional[Dict[str, Any]]:
+    """Limpia un acompañante/subinvitado: objeto plano con valores escalares."""
+    if not isinstance(item, dict):
+        return None
+    clean: Dict[str, Any] = {}
+    for k, v in list(item.items())[:MAX_NESTED_KEYS]:
+        if not isinstance(k, str) or not k or len(k) > 100:
+            continue
+        cleaned = _clean_scalar(v)
+        if cleaned is not _MISSING:
+            clean[k] = cleaned
+    return clean or None
+
+
 def _clean_payload(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Limpia el payload libre de una respuesta.
+
+    Acepta escalares y listas de objetos planos para poder guardar el grupo
+    familiar: el invitado principal + sus acompañantes/subinvitados, cada uno
+    con su propio `asisten`, `menu`, etc. No permite anidamiento profundo.
+    """
     clean: Dict[str, Any] = {}
     for k, v in list(raw.items())[:30]:
         if not isinstance(k, str) or not k or len(k) > 100:
             continue
-        if isinstance(v, str):
-            v = v.strip()[:2000]
-        elif isinstance(v, (int, float, bool)) or v is None:
-            pass
+        if isinstance(v, list):
+            cleaned_list: List[Any] = []
+            for item in v[:MAX_NESTED_ITEMS]:
+                if isinstance(item, dict):
+                    companion = _clean_companion(item)
+                    if companion is not None:
+                        cleaned_list.append(companion)
+                else:
+                    scalar = _clean_scalar(item)
+                    if scalar is not _MISSING:
+                        cleaned_list.append(scalar)
+            if cleaned_list or v == []:
+                clean[k] = cleaned_list
         else:
-            continue
-        clean[k] = v
+            cleaned = _clean_scalar(v)
+            if cleaned is not _MISSING:
+                clean[k] = cleaned
     return clean
+
+
+def _notify_card_event(card: DeployedCard, title: str, body: str, db: Session) -> None:
+    """Avisa al dueño de la tarjeta; si no tiene dueño, a los admins.
+
+    Las notificaciones nunca deben romper una respuesta pública: si algo falla
+    (por ejemplo, un enum viejo en la base), se revierte solo este insert y se
+    registra el error.
+    """
+    try:
+        if card.client_id:
+            recipients = [card.client_id]
+            link = "/mi-tarjeta"
+        else:
+            recipients = [
+                user.id for user in db.query(User).filter(User.role == "admin").all()
+            ]
+            link = "/sitios"
+        if not recipients:
+            return
+        for user_id in recipients:
+            db.add(
+                Notification(
+                    user_id=user_id,
+                    kind=NotificationKind.card_submission,
+                    title=title,
+                    body=body,
+                    link=link,
+                )
+            )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logging.getLogger("card_deploy").warning(
+            "No se pudo crear la notificación de la tarjeta", exc_info=True
+        )
+
+
+def _submission_notification_text(
+    kind: str, payload: Dict[str, Any], card: DeployedCard
+) -> Tuple[str, str]:
+    nombre = str(payload.get("nombre") or "Un invitado").strip()[:120] or "Un invitado"
+    card_title = card.title[:120]
+
+    if kind == "rsvp":
+        asisten = payload.get("asisten")
+        if asisten is True:
+            action = "confirmó su asistencia"
+        elif asisten is False:
+            action = "avisó que no asiste"
+        else:
+            action = "respondió la invitación"
+        companions = payload.get("acompañantes")
+        count = len(companions) if isinstance(companions, list) else 0
+        try:
+            count = max(count, int(payload.get("cantidad") or 0))
+        except (TypeError, ValueError):
+            pass
+        people = count + 1
+        suffix = f" por {people} personas" if people > 1 else ""
+        return "Nueva confirmación", f"{nombre} {action}{suffix} en '{card_title}'"
+
+    if kind == "cancion":
+        cancion = str(payload.get("cancion") or "").strip()[:80]
+        detail = f" '{cancion}'" if cancion else " una canción"
+        return "Nueva canción", f"{nombre} pidió{detail} en '{card_title}'"
+
+    if kind == "mensaje":
+        return "Nuevo mensaje", f"{nombre} dejó un mensaje en '{card_title}'"
+
+    if kind == "menu":
+        menu = str(payload.get("menu") or "").strip()[:80]
+        detail = f" '{menu}'" if menu else " su menú"
+        return "Nuevo menú", f"{nombre} eligió{detail} en '{card_title}'"
+
+    return "Nueva respuesta", f"{nombre} respondió en '{card_title}'"
 
 
 @card_public_router.get("/tarjetas/{slug}/config", response_model=PublicCardConfig)
@@ -493,11 +719,26 @@ def public_submit(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="El nombre es obligatorio para confirmar asistencia",
         )
+    # Compatibilidad: las tarjetas nuevas mandan el grupo en `acompañantes`.
+    # Se normaliza el conteo para que el panel/CSV y las tarjetas viejas que
+    # solo conocen `cantidad` sigan funcionando.
+    if kind == "rsvp":
+        companions = None
+        for key in ("acompañantes", "acompanantes", "subinvitados"):
+            if isinstance(payload.get(key), list):
+                companions = payload[key]
+                break
+        if companions is not None:
+            payload["acompañantes"] = companions
+            payload["cantidad"] = len(companions)
     sub = CardSubmission(card_id=card.id, kind=kind, payload=payload)
     db.add(sub)
     db.commit()
     db.refresh(sub)
-    return SubmissionResult(id=sub.id)
+    sub_id = sub.id
+    title, body = _submission_notification_text(kind, payload, card)
+    _notify_card_event(card, title, body, db)
+    return SubmissionResult(id=sub_id)
 
 
 # ─── Respuestas: admin ───────────────────────────────────────────────────────
@@ -508,20 +749,76 @@ def _list_submissions(db: Session, card_id: int, kind: Optional[str] = None) -> 
     return q.order_by(CardSubmission.created_at.desc()).all()
 
 
+COMPANION_PAYLOAD_KEYS = ("acompañantes", "acompanantes", "subinvitados")
+
+
+def _csv_value(value: Any) -> Any:
+    """Convierte listas/dicts a JSON legible para una celda de Excel."""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return value
+
+
+def _row_companions(payload: Any) -> List[Dict[str, Any]]:
+    if not isinstance(payload, dict):
+        return []
+    for key in COMPANION_PAYLOAD_KEYS:
+        value = payload.get(key)
+        if isinstance(value, list):
+            companions: List[Dict[str, Any]] = []
+            for item in value:
+                if isinstance(item, dict):
+                    companions.append(item)
+                elif isinstance(item, (str, int, float)):
+                    companions.append({"nombre": str(item)})
+            return companions
+    return []
+
+
 def _submissions_csv(slug: str, rows: List[CardSubmission]) -> StreamingResponse:
     keys: List[str] = []
+    max_companions = 0
     for r in rows:
         payload = r.payload if isinstance(r.payload, dict) else {}
         for k in payload.keys():
+            if k in COMPANION_PAYLOAD_KEYS:
+                continue
             if k not in keys:
                 keys.append(k)
+        if r.kind == "rsvp":
+            max_companions = max(max_companions, len(_row_companions(payload)))
+
+    companion_columns: List[str] = []
+    for idx in range(1, max_companions + 1):
+        companion_columns.extend(
+            [
+                f"acompañante_{idx}_nombre",
+                f"acompañante_{idx}_asisten",
+                f"acompañante_{idx}_menu",
+                f"acompañante_{idx}_notas",
+            ]
+        )
+
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "tipo", "fecha"] + keys)
+    writer.writerow(["id", "tipo", "fecha"] + keys + companion_columns)
     for r in rows:
         payload = r.payload if isinstance(r.payload, dict) else {}
         created = r.created_at.isoformat(sep=" ") if r.created_at else ""
-        writer.writerow([r.id, r.kind, created] + [payload.get(k, "") for k in keys])
+        base = [r.id, r.kind, created] + [_csv_value(payload.get(k, "")) for k in keys]
+        companions = _row_companions(payload)
+        extra: List[Any] = []
+        for idx in range(max_companions):
+            companion = companions[idx] if idx < len(companions) else {}
+            extra.extend(
+                [
+                    _csv_value(companion.get("nombre", "")),
+                    _csv_value(companion.get("asisten", "")),
+                    _csv_value(companion.get("menu", "")),
+                    _csv_value(companion.get("notas", "")),
+                ]
+            )
+        writer.writerow(base + extra)
     output.seek(0)
     data = output.getvalue()
     return StreamingResponse(
@@ -812,7 +1109,15 @@ async def public_upload_photo(
     db.add(sub)
     db.commit()
     db.refresh(sub)
-    return sub
+    out = SubmissionOut.model_validate(sub)
+    guest = str(payload.get("nombre") or "Un invitado").strip()[:120] or "Un invitado"
+    _notify_card_event(
+        card,
+        "Nueva foto",
+        f"{guest} subió una foto a '{card.title[:120]}'",
+        db,
+    )
+    return out
 
 
 def _parse_ids_or_400(ids: Optional[str]) -> Optional[List[int]]:

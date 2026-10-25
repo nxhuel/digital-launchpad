@@ -15,7 +15,7 @@ export const CARD_FEATURES: { key: CardFeatureKey; label: string; description: s
     key: 'rsvp',
     label: 'Confirmaciones',
     description:
-      'Invitados que confirman asistencia (nombre, cantidad, menú y datos del formulario) con descarga en Excel.',
+      'Invitado principal + acompañantes/subinvitados, cada uno con su propio estado de asistencia, menú y datos. Descarga en Excel.',
   },
   {
     key: 'menu',

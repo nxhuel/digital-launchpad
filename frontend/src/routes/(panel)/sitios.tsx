@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { apiFetch, apiUploadForm, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, ClientUserItem, DeployedCardItem, User } from '../../types'
 import { CARD_FEATURES, enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
+import { rsvpExtras, rsvpGroup, rsvpGroupCounts, rsvpSummary } from '../../lib/rsvp'
+import { RsvpMenuSummary, RsvpPeopleList, RsvpStatusBadge } from '../../components/panel/RsvpPeople'
 import { toast } from 'sonner'
 import {
   Pencil,
@@ -48,6 +50,110 @@ function slugifyClient(text: string): string {
 
 const SLUG_RE = /^[a-z0-9-]{1,100}$/
 const MAX_ZIP_BYTES = 50 * 1024 * 1024
+
+interface FeatureDetection {
+  features: string[]
+  sources: Record<string, string[]>
+}
+
+/* ═══════════════════════════════════════════
+   CHECKLIST DE SECCIONES
+═══════════════════════════════════════════ */
+function FeatureChecklist({
+  features,
+  onToggle,
+  detecting,
+  detected,
+  detectError,
+  hasFile,
+  isRedeploy,
+}: {
+  features: CardFeatureKey[]
+  onToggle: (key: CardFeatureKey) => void
+  detecting: boolean
+  detected: FeatureDetection | null
+  detectError: string | null
+  hasFile: boolean
+  isRedeploy: boolean
+}) {
+  const detectedLabels = detected
+    ? enabledFeatures(detected.features).map(
+        key => CARD_FEATURES.find(f => f.key === key)?.label ?? key
+      )
+    : []
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        Secciones que ve el cliente
+      </label>
+      <div className="space-y-2">
+        {CARD_FEATURES.map(f => {
+          const checked = features.includes(f.key)
+          return (
+            <label
+              key={f.key}
+              className={`flex items-start gap-3 rounded-xl border px-3.5 py-2.5 cursor-pointer transition-colors ${
+                checked
+                  ? 'border-violet-300 bg-violet-50/60'
+                  : 'border-slate-200 hover:bg-slate-50'
+              } ${detecting ? 'opacity-70' : ''}`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onToggle(f.key)}
+                disabled={detecting}
+                className="mt-0.5 w-4 h-4 accent-violet-600 shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-800">{f.label}</span>
+                <span className="block text-xs text-slate-400">{f.description}</span>
+              </span>
+            </label>
+          )
+        })}
+      </div>
+
+      <div className="mt-2 min-h-5 text-xs">
+        {detecting ? (
+          <span className="inline-flex items-center gap-1.5 text-violet-600 font-medium">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Detectando secciones del ZIP...
+          </span>
+        ) : detected ? (
+          detectedLabels.length > 0 ? (
+            <span className="text-emerald-600 font-medium">
+              Detectadas automáticamente: {detectedLabels.join(' · ')}. Podés ajustar el checklist.
+            </span>
+          ) : (
+            <span className="text-slate-400">
+              {isRedeploy
+                ? 'No detectamos secciones dinámicas; se mantienen las actuales.'
+                : 'No detectamos secciones dinámicas; podés tildarlas manualmente.'}
+            </span>
+          )
+        ) : detectError ? (
+          <span className="text-amber-600">
+            No pudimos detectar automáticamente. Tildá las secciones manualmente.
+          </span>
+        ) : (
+          <span className="text-slate-400">
+            {hasFile
+              ? 'Detectando secciones...'
+              : isRedeploy
+                ? 'Se mantienen las secciones actuales. Al elegir un ZIP nuevo se detectan automáticamente.'
+                : 'Se detectan automáticamente al elegir el ZIP.'}
+          </span>
+        )}
+      </div>
+
+      <p className="text-xs text-slate-400 mt-1.5">
+        Tildá solo lo que implementaste en el ZIP: el cliente únicamente va a ver esas secciones en
+        su panel. Podés cambiarlo después desde “Dueño y ajustes”.
+      </p>
+    </div>
+  )
+}
 
 /* ═══════════════════════════════════════════
    PÁGINA
@@ -305,37 +411,74 @@ function DeployZipModal({
   const [slug, setSlug] = useState(redeploy ? redeploy.slug : '')
   const [title, setTitle] = useState(redeploy ? redeploy.title : '')
   const [slugTouched, setSlugTouched] = useState(!!redeploy)
-  const [features, setFeatures] = useState<CardFeatureKey[]>([])
+  const [features, setFeatures] = useState<CardFeatureKey[]>(
+    redeploy ? enabledFeatures(redeploy.features) : []
+  )
+  const [detecting, setDetecting] = useState(false)
+  const [detected, setDetected] = useState<FeatureDetection | null>(null)
+  const [detectError, setDetectError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState<DeployedCardItem | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const detectionSeq = useRef(0)
 
   const toggleFeature = (key: CardFeatureKey) =>
     setFeatures(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     )
 
-  const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
     if (f.size > MAX_ZIP_BYTES) {
       e.target.value = ''
+      detectionSeq.current += 1
       setFile(null)
+      setDetecting(false)
+      setDetected(null)
+      setDetectError(null)
       toast.error('El ZIP supera los 50 MB. Optimizá imágenes o videos antes de subirlo.')
       return
     }
     setFile(f)
     setResult(null)
+    setDetected(null)
+    setDetectError(null)
+    if (!redeploy) setFeatures([])
     if (!slugTouched) {
       const suggested = slugifyClient(f.name)
       setSlug(suggested)
       if (!title.trim()) setTitle(suggested)
     }
+
+    // Se detecta antes de publicar para que el checklist ya venga tildado.
+    // Si el usuario elige otro archivo, la respuesta vieja se descarta.
+    const seq = ++detectionSeq.current
+    setDetecting(true)
+    try {
+      const form = new FormData()
+      form.append('file', f)
+      const detection = await apiUploadForm<FeatureDetection>(
+        '/admin/deployed-cards/detect-features',
+        form
+      )
+      if (seq !== detectionSeq.current) return
+      setDetected(detection)
+      const next = enabledFeatures(detection.features)
+      // En una actualización, si no se detecta nada, conservamos las secciones
+      // actuales para no desactivar todo por un falso negativo.
+      if (next.length > 0 || !redeploy) setFeatures(next)
+    } catch (err) {
+      if (seq !== detectionSeq.current) return
+      setDetectError(err instanceof Error ? err.message : 'No se pudieron detectar las secciones')
+    } finally {
+      if (seq === detectionSeq.current) setDetecting(false)
+    }
   }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file || saving) return
+    if (!file || saving || detecting) return
     const finalSlug = slug.trim().toLowerCase()
     if (!redeploy && !SLUG_RE.test(finalSlug)) {
       toast.error('Dirección inválida: solo minúsculas, números y guiones')
@@ -345,11 +488,12 @@ function DeployZipModal({
     try {
       const form = new FormData()
       form.append('file', file)
+      // Lista (posiblemente vacía) de secciones tildadas en el checklist.
+      // En una actualización reemplaza las secciones guardadas.
+      form.append('features', features.join(','))
       if (!redeploy) {
         form.append('slug', finalSlug)
         form.append('title', title.trim() || finalSlug)
-        // Lista (posiblemente vacía) de secciones tildadas en el checklist
-        form.append('features', features.join(','))
       }
       const path = redeploy
         ? `/admin/deployed-cards/${redeploy.id}/redeploy`
@@ -422,45 +566,18 @@ function DeployZipModal({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Secciones que ve el cliente
-                </label>
-                <div className="space-y-2">
-                  {CARD_FEATURES.map(f => {
-                    const checked = features.includes(f.key)
-                    return (
-                      <label
-                        key={f.key}
-                        className={`flex items-start gap-3 rounded-xl border px-3.5 py-2.5 cursor-pointer transition-colors ${
-                          checked
-                            ? 'border-violet-300 bg-violet-50/60'
-                            : 'border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleFeature(f.key)}
-                          className="mt-0.5 w-4 h-4 accent-violet-600 shrink-0"
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-slate-800">
-                            {f.label}
-                          </span>
-                          <span className="block text-xs text-slate-400">{f.description}</span>
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-                <p className="text-xs text-slate-400 mt-1.5">
-                  Tildá solo lo que implementaste en el ZIP: el cliente únicamente va a ver esas
-                  secciones en su panel. Podés cambiarlo después desde “Dueño y ajustes”.
-                </p>
-              </div>
             </>
           )}
+
+          <FeatureChecklist
+            features={features}
+            onToggle={toggleFeature}
+            detecting={detecting}
+            detected={detected}
+            detectError={detectError}
+            hasFile={!!file}
+            isRedeploy={!!redeploy}
+          />
 
           {result && (
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center gap-2">
@@ -482,10 +599,10 @@ function DeployZipModal({
             </button>
             <button
               type="submit"
-              disabled={saving || !file}
+              disabled={saving || !file || detecting}
               className="btn-primary rounded-lg px-6 disabled:opacity-50"
             >
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Subiendo...</> : redeploy ? 'Actualizar archivos' : 'Publicar'}
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Subiendo...</> : detecting ? <><Loader2 className="w-4 h-4 animate-spin" /> Detectando...</> : redeploy ? 'Actualizar archivos' : 'Publicar'}
             </button>
           </div>
         </form>
@@ -632,12 +749,7 @@ function RespuestasModal({
 
   useEffect(() => { load(kind) }, [kind])
 
-  const asisten = rows.filter(r => r.payload.asisten === true).length
-  const menuCount: Record<string, number> = {}
-  rows.forEach(r => {
-    const m = r.payload.menu
-    if (typeof m === 'string' && m) menuCount[m] = (menuCount[m] || 0) + 1
-  })
+  const rsvp = rsvpSummary(rows)
 
   const remove = async (id: number) => {
     if (!confirm('¿Eliminar esta respuesta?')) return
@@ -667,7 +779,7 @@ function RespuestasModal({
 
   const detailOf = (r: CardSubmissionItem) =>
     Object.entries(r.payload)
-      .filter(([k]) => !['nombre', 'asisten', 'url', 'thumb_url', 'public_id', 'formato'].includes(k))
+      .filter(([k]) => !['nombre', 'asisten', 'url', 'thumb_url', 'public_id', 'formato', 'cantidad', 'acompañantes', 'acompanantes', 'subinvitados'].includes(k))
       .map(([k, v]) => `${k}: ${String(v)}`)
       .join(' · ')
 
@@ -682,9 +794,15 @@ function RespuestasModal({
             <h2 className="font-bold text-slate-900 text-lg">Respuestas · {item.title}</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {rows.length} {rows.length === 1 ? 'respuesta' : 'respuestas'}
-              {asisten > 0 && ` · ${asisten} confirman asistencia`}
-              {Object.entries(menuCount).map(([m, n]) => ` · ${m}: ${n}`).join('')}
+              {rsvp.groups > 0 &&
+                ` · ${rsvp.groups} ${rsvp.groups === 1 ? 'grupo' : 'grupos'}`}
+              {rsvp.groups > 0 &&
+                ` · ${rsvp.declaredPeople} ${rsvp.declaredPeople === 1 ? 'persona' : 'personas'}`}
+              {rsvp.attending > 0 && ` · ${rsvp.attending} asisten`}
+              {rsvp.declined > 0 && ` · ${rsvp.declined} no asisten`}
+              {rsvp.pending > 0 && ` · ${rsvp.pending} sin responder`}
             </p>
+            <RsvpMenuSummary counts={rsvp.menuCounts} className="mt-2" />
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-5 h-5" />
@@ -717,45 +835,106 @@ function RespuestasModal({
             <p className="text-center py-8 text-slate-400 text-sm">Todavía no hay respuestas</p>
           ) : (
             <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
-              {rows.map(r => (
-                <div key={r.id} className="flex items-start gap-3 px-4 py-2.5">
-                  {r.kind === 'foto' && typeof r.payload.thumb_url === 'string' && (
-                    <a href={String(r.payload.url)} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                      <img
-                        src={String(r.payload.thumb_url)}
-                        alt="Foto de invitado"
-                        className="w-12 h-12 rounded-lg object-cover bg-slate-100"
-                        loading="lazy"
-                      />
-                    </a>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 flex flex-wrap items-center gap-2">
-                      {String(r.payload.nombre || 'Sin nombre')}
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-violet-600 bg-violet-50 rounded px-1.5 py-0.5">
-                        {r.kind}
-                      </span>
-                      {r.payload.asisten === true && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-px">Asiste</span>
+              {rows.map(r => {
+                if (r.kind === 'rsvp') {
+                  const group = rsvpGroup(r)
+                  const counts = rsvpGroupCounts(group)
+                  const extras = rsvpExtras(r.payload)
+                  return (
+                    <div key={r.id} className="px-4 py-3 space-y-2.5">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-900">{group.nombre}</p>
+                            <RsvpStatusBadge asisten={group.asisten} />
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-violet-600 bg-violet-50 rounded px-1.5 py-0.5">
+                              rsvp
+                            </span>
+                            {group.declaredCompanions > 0 && (
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-px">
+                                {group.declaredCompanions}{' '}
+                                {group.declaredCompanions === 1 ? 'acompañante' : 'acompañantes'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[11px] text-slate-400">
+                            <span>{counts.attending} asisten</span>
+                            {counts.declined > 0 && <span>· {counts.declined} no asisten</span>}
+                            {counts.pending > 0 && <span>· {counts.pending} sin responder</span>}
+                            {group.menu && <span>· Menú principal: {group.menu}</span>}
+                            {group.notas && <span>· {group.notas}</span>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => remove(r.id)}
+                          className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                          title="Eliminar respuesta"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {group.companions.length > 0 && (
+                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5">
+                            Subinvitados
+                          </p>
+                          <RsvpPeopleList group={group} includeMain={false} />
+                        </div>
                       )}
-                      {r.payload.asisten === false && (
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-px">No asiste</span>
+
+                      {extras.length > 0 && (
+                        <p className="text-xs text-slate-500">
+                          {extras.map(([key, value]) => `${key}: ${value}`).join(' · ')}
+                        </p>
                       )}
-                    </p>
-                    {detailOf(r) && <p className="text-xs text-slate-500 truncate">{detailOf(r)}</p>}
-                    <p className="text-[11px] text-slate-400">
-                      {new Date(r.created_at).toLocaleString('es-AR')}
-                    </p>
+                      <p className="text-[11px] text-slate-400">
+                        {new Date(r.created_at).toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={r.id} className="flex items-start gap-3 px-4 py-2.5">
+                    {r.kind === 'foto' && typeof r.payload.thumb_url === 'string' && (
+                      <a href={String(r.payload.url)} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                        <img
+                          src={String(r.payload.thumb_url)}
+                          alt="Foto de invitado"
+                          className="w-12 h-12 rounded-lg object-cover bg-slate-100"
+                          loading="lazy"
+                        />
+                      </a>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 flex flex-wrap items-center gap-2">
+                        {String(r.payload.nombre || 'Sin nombre')}
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-violet-600 bg-violet-50 rounded px-1.5 py-0.5">
+                          {r.kind}
+                        </span>
+                        {r.payload.asisten === true && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-px">Asiste</span>
+                        )}
+                        {r.payload.asisten === false && (
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-px">No asiste</span>
+                        )}
+                      </p>
+                      {detailOf(r) && <p className="text-xs text-slate-500 truncate">{detailOf(r)}</p>}
+                      <p className="text-[11px] text-slate-400">
+                        {new Date(r.created_at).toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => remove(r.id)}
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                      title="Eliminar respuesta"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => remove(r.id)}
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
-                    title="Eliminar respuesta"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -873,7 +1052,8 @@ function AjustesModal({
               })}
             </div>
             <p className="text-xs text-slate-400 mt-1.5">
-              Se muestran en el panel del cliente. El menú solo aparece si tildás “Menú”.
+              Se muestran en el panel del cliente. Se detectan automáticamente al publicar o
+              actualizar el ZIP; acá podés ajustarlas. El menú solo aparece si tildás “Menú”.
             </p>
           </div>
 

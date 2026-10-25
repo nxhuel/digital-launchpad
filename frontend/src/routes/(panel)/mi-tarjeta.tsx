@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { apiFetch, downloadCsv } from '../../lib/api'
 import type { CardSubmissionItem, DeployedCardItem, User } from '../../types'
 import { enabledFeatures, type CardFeatureKey } from '../../lib/cardFeatures'
+import { normalizeMultiline, rsvpExtras, rsvpGroup, rsvpGroupCounts, rsvpSummary } from '../../lib/rsvp'
+import { RsvpMenuSummary, RsvpPeopleList, RsvpStatusBadge } from '../../components/panel/RsvpPeople'
 import { toast } from 'sonner'
 import {
   Users,
@@ -53,9 +55,6 @@ async function copyText(text: string) {
   }
 }
 
-/* Claves internas de las fotos (Cloudinary) que nunca se muestran al cliente */
-const TECHNICAL_KEYS = ['nombre', 'asisten', 'url', 'thumb_url', 'public_id', 'formato']
-
 /* Lista para las respuestas de texto libre (canciones y mensajes). */
 function TextResponseList({
   rows,
@@ -93,7 +92,7 @@ function TextResponseList({
       ) : (
         <ul className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
           {rows.map(r => {
-            const detail = r.payload[detailKey]
+            const detail = normalizeMultiline(r.payload[detailKey]).trim()
             return (
               <li key={r.id} className="flex items-start gap-3 px-4 py-3">
                 <span className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-[11px] font-bold flex items-center justify-center shrink-0 uppercase">
@@ -103,8 +102,10 @@ function TextResponseList({
                   <p className="text-sm font-semibold text-slate-900">
                     {String(r.payload.nombre || 'Sin nombre')}
                   </p>
-                  {String(detail ?? '').trim() !== '' && (
-                    <p className="text-sm text-slate-600 break-words mt-0.5">{String(detail)}</p>
+                  {detail && (
+                    <p className="text-sm text-slate-600 break-words whitespace-pre-line leading-relaxed mt-0.5">
+                      {detail}
+                    </p>
                   )}
                   <p className="text-[11px] text-slate-400 mt-1">{fmtDateTime(r.created_at)}</p>
                 </div>
@@ -214,8 +215,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
-  const asisten = useMemo(() => rows.filter(r => r.payload.asisten === true).length, [rows])
-  const noAsisten = useMemo(() => rows.filter(r => r.payload.asisten === false).length, [rows])
+  const rsvp = useMemo(() => rsvpSummary(rows), [rows])
 
   const copy = async () => {
     await copyText(fullUrl)
@@ -296,7 +296,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   }
 
   const allTabs: { id: Tab; label: string; icon: typeof Users; count?: number }[] = [
-    { id: 'rsvp', label: 'Invitados', icon: Users, count: loadedTabs.has('rsvp') ? rows.length : undefined },
+    { id: 'rsvp', label: 'Invitados', icon: Users, count: loadedTabs.has('rsvp') ? rsvp.attending : undefined },
     { id: 'menu', label: 'Menú', icon: UtensilsCrossed, count: menuOptions.length || undefined },
     { id: 'canciones', label: 'Canciones', icon: Music, count: loadedTabs.has('canciones') ? songRows.length : undefined },
     { id: 'mensajes', label: 'Mensajes', icon: MessageCircle, count: loadedTabs.has('mensajes') ? messageRows.length : undefined },
@@ -384,13 +384,27 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
         {tab === 'rsvp' && featureKeys.includes('rsvp') && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                 <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                  {asisten} asisten
+                  {rsvp.attending} {rsvp.attending === 1 ? 'persona asiste' : 'personas asisten'}
                 </span>
-                {noAsisten > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
+                  {rsvp.groups} {rsvp.groups === 1 ? 'grupo' : 'grupos'} · {rsvp.declaredPeople}{' '}
+                  {rsvp.declaredPeople === 1 ? 'persona' : 'personas'}
+                </span>
+                {rsvp.companions > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200">
+                    {rsvp.companions} {rsvp.companions === 1 ? 'acompañante' : 'acompañantes'}
+                  </span>
+                )}
+                {rsvp.declined > 0 && (
                   <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-                    {noAsisten} no asisten
+                    {rsvp.declined} no {rsvp.declined === 1 ? 'asiste' : 'asisten'}
+                  </span>
+                )}
+                {rsvp.pending > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                    {rsvp.pending} sin responder
                   </span>
                 )}
               </div>
@@ -398,6 +412,7 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                 <Download className="w-3.5 h-3.5" /> Excel
               </button>
             </div>
+            <RsvpMenuSummary counts={rsvp.menuCounts} />
 
             {loadingRows ? (
               <p className="text-center py-8 text-slate-400 text-sm">Cargando invitados...</p>
@@ -419,45 +434,67 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {rows.map(r => {
-                      const extras = Object.entries(r.payload).filter(
-                        ([k, v]) => !TECHNICAL_KEYS.includes(k) && String(v ?? '').trim() !== ''
-                      )
+                      const group = rsvpGroup(r)
+                      const counts = rsvpGroupCounts(group)
+                      const extras = rsvpExtras(r.payload)
                       return (
                         <tr key={r.id} className="hover:bg-slate-50/60 align-top">
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <span className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-[11px] font-bold flex items-center justify-center shrink-0 uppercase">
-                                {String(r.payload.nombre || '?').slice(0, 2)}
-                              </span>
-                              <span className="font-semibold text-slate-900">
-                                {String(r.payload.nombre || 'Sin nombre')}
-                              </span>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-slate-900">{group.nombre}</span>
+                              <p className="text-[11px] text-slate-400">
+                                {group.declaredCompanions > 0
+                                  ? `${group.declaredCompanions} ${
+                                      group.declaredCompanions === 1 ? 'acompañante' : 'acompañantes'
+                                    }`
+                                  : 'Sin acompañantes'}
+                              </p>
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            {r.payload.asisten === true && (
-                              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-px">Asiste</span>
-                            )}
-                            {r.payload.asisten === false && (
-                              <span className="text-[11px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-px">No asiste</span>
-                            )}
-                            {r.payload.asisten !== true && r.payload.asisten !== false && (
-                              <span className="text-[11px] font-bold text-slate-400 bg-slate-50 border border-slate-200 rounded-full px-2 py-px">Sin respuesta</span>
-                            )}
+                            <div className="space-y-1">
+                              <RsvpStatusBadge asisten={group.asisten} />
+                              <p className="text-[11px] text-slate-400">
+                                {counts.attending} asisten
+                                {counts.declined > 0 && ` · ${counts.declined} no asisten`}
+                                {counts.pending > 0 && ` · ${counts.pending} sin responder`}
+                              </p>
+                            </div>
                           </td>
                           <td className="px-4 py-3">
-                            {extras.length === 0 ? (
-                              <span className="text-slate-300">—</span>
-                            ) : (
-                              <dl className="space-y-1">
-                                {extras.map(([k, v]) => (
-                                  <div key={k} className="flex gap-1.5 text-xs">
-                                    <dt className="text-slate-400 capitalize shrink-0">{k}:</dt>
-                                    <dd className="text-slate-700 font-medium break-words">{String(v)}</dd>
-                                  </div>
-                                ))}
-                              </dl>
-                            )}
+                            <div className="space-y-2">
+                              {group.notas && (
+                                <p className="text-xs text-slate-500 whitespace-pre-line leading-relaxed">
+                                  {normalizeMultiline(group.notas)}
+                                </p>
+                              )}
+                              {group.menu && (
+                                <p className="text-xs text-slate-600">Menú principal: {group.menu}</p>
+                              )}
+                              {group.companions.length > 0 && (
+                                <RsvpPeopleList
+                                  group={group}
+                                  includeMain={false}
+                                  showLegacyNote={false}
+                                />
+                              )}
+                              {extras.length > 0 && (
+                                <dl className="space-y-1.5">
+                                  {extras.map(([key, value]) => (
+                                    <div key={key} className="text-xs">
+                                      <dt className="text-slate-400 capitalize">{key}:</dt>
+                                      <dd className="text-slate-700 font-medium break-words whitespace-pre-line leading-relaxed mt-0.5">
+                                        {normalizeMultiline(value)}
+                                      </dd>
+                                    </div>
+                                  ))}
+                                </dl>
+                              )}
+                              {group.companions.length === 0 &&
+                                !group.menu &&
+                                !group.notas &&
+                                extras.length === 0 && <span className="text-slate-300">—</span>}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap text-[11px] text-slate-400">
                             {fmtDateTime(r.created_at)}

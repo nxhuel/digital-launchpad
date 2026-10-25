@@ -47,6 +47,14 @@ with engine.begin() as conn:
         print("Migration: added deposit to paymentkind enum")
     except Exception as e:
         print(f"Migration note (paymentkind deposit): {e}")
+    # Notificaciones de tarjetas: las tarjetas viejas pueden tener un enum sin
+    # estos valores aunque el modelo ya los declare.
+    for kind in ("card_created", "card_status_changed", "card_submission"):
+        try:
+            conn.execute(text(f"ALTER TYPE notificationkind ADD VALUE IF NOT EXISTS '{kind}'"))
+            print(f"Migration: added {kind} to notificationkind enum")
+        except Exception as e:
+            print(f"Migration note (notificationkind {kind}): {e}")
 
 # Verify tables
 with engine.connect() as conn:

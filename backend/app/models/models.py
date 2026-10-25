@@ -77,6 +77,7 @@ class NotificationKind(str, enum.Enum):
     delivery_added = "delivery_added"
     card_created = "card_created"
     card_status_changed = "card_status_changed"
+    card_submission = "card_submission"
 
 
 class AuthCodePurpose(str, enum.Enum):

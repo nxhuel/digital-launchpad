@@ -40,6 +40,64 @@ def test_submit_rsvp_and_list(client, admin_token, deploy_dir):
     assert rows[0]["payload"]["nombre"] == "Juan Pérez"
     assert rows[0]["payload"]["menu"] == "Veggie"
 
+    # Sin dueño asignado, la notificación llega a los admins.
+    notifs = client.get("/api/notifications", headers=headers).json()
+    assert any(n["kind"] == "card_submission" for n in notifs)
+    assert any("Juan Pérez" in n["body"] for n in notifs)
+
+
+def test_submit_rsvp_with_companion_details(client, admin_token, deploy_dir):
+    card_id = upload(client, admin_token, slug="boda").json()["id"]
+    resp = _submit(client, "boda", {
+        "kind": "rsvp",
+        "nombre": "Juan Pérez",
+        "asisten": True,
+        "menu": "Normal",
+        "acompañantes": [
+            {"nombre": "Ana Pérez", "asisten": True, "menu": "Veggie"},
+            {"nombre": "Luis Pérez", "asisten": False},
+            {"nombre": "Sofía Pérez", "asisten": None, "menu": "Celíaco"},
+        ],
+        "cancion": "La Bamba",
+        "mensaje": "¡Felicitaciones!",
+    })
+    assert resp.status_code == 201, resp.text
+
+    headers = auth_headers(admin_token)
+    rows = client.get(
+        f"/api/admin/deployed-cards/{card_id}/respuestas", headers=headers
+    ).json()
+    payload = rows[0]["payload"]
+    assert payload["cantidad"] == 3
+    assert len(payload["acompañantes"]) == 3
+    assert payload["acompañantes"][0]["nombre"] == "Ana Pérez"
+    assert payload["acompañantes"][0]["menu"] == "Veggie"
+    assert payload["acompañantes"][1]["asisten"] is False
+    assert payload["acompañantes"][2]["asisten"] is None
+
+
+def test_export_csv_flattens_companions(client, admin_token, deploy_dir):
+    card_id = upload(client, admin_token, slug="boda").json()["id"]
+    _submit(client, "boda", {
+        "kind": "rsvp",
+        "nombre": "Juan Pérez",
+        "asisten": True,
+        "acompañantes": [
+            {"nombre": "Ana Pérez", "asisten": True, "menu": "Veggie"},
+            {"nombre": "Luis Pérez", "asisten": False},
+        ],
+    })
+    headers = auth_headers(admin_token)
+    resp = client.get(
+        f"/api/admin/deployed-cards/{card_id}/respuestas.csv", headers=headers
+    )
+    assert resp.status_code == 200
+    text = resp.text
+    assert "acompañante_1_nombre" in text
+    assert "acompañante_1_menu" in text
+    assert "Ana Pérez" in text
+    assert "Veggie" in text
+
 
 def test_submit_validations(client, admin_token, deploy_dir):
     upload(client, admin_token, slug="boda")
@@ -137,6 +195,11 @@ def test_owner_and_my_cards(client, admin_token, deploy_dir):
         f"/api/my-cards/{card_id}/respuestas", headers=auth_headers(client_token)
     )
     assert rows.status_code == 200 and len(rows.json()) == 1
+    # El dueño recibe la novedad en su campana de notificaciones.
+    notifs = client.get("/api/notifications", headers=auth_headers(client_token)).json()
+    assert any(
+        n["kind"] == "card_submission" and "Invitado" in n["body"] for n in notifs
+    )
     csv_resp = client.get(
         f"/api/my-cards/{card_id}/respuestas.csv", headers=auth_headers(client_token)
     )

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Dict, Optional, List
 from pydantic import BaseModel, Field, field_validator, field_serializer
 
 
@@ -631,7 +631,11 @@ class PublicCardConfig(UTCBaseModel):
 
 class SubmissionIn(UTCBaseModel):
     """Alta pública de respuesta. Acepta `kind` + campos libres de la tarjeta
-    (nombre, asisten, cantidad, menu, cancion, mensaje...)."""
+    (nombre, asisten, cantidad, acompañantes, menu, cancion, mensaje...).
+
+    `acompañantes` es una lista de objetos planos: cada subinvitado puede tener
+    su propio `asisten`, `menu` y `notas`. `cantidad` es la cantidad de
+    acompañantes (no incluye al invitado principal)."""
 
     kind: str = Field(..., min_length=1, max_length=50)
 
@@ -657,6 +661,13 @@ class DeployedCardConfigUpdate(UTCBaseModel):
     menu_options: Optional[List[str]] = Field(None, max_length=30)
     features: Optional[List[str]] = Field(None, max_length=len(CARD_FEATURES))
     submissions_open: Optional[bool] = None
+
+
+class FeatureDetectionOut(UTCBaseModel):
+    """Secciones detectadas automáticamente en el ZIP de una tarjeta."""
+
+    features: List[str] = []
+    sources: Dict[str, List[str]] = {}
 
 
 class DeployedCardOwnerUpdate(UTCBaseModel):

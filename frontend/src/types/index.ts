@@ -164,7 +164,7 @@ export interface CardSubmissionItem {
   id: number
   card_id: number
   kind: string
-  payload: Record<string, string | number | boolean | null>
+  payload: Record<string, unknown>
   created_at: string
 }
 

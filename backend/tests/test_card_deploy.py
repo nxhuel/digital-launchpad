@@ -26,6 +26,23 @@ BASIC_FILES = {
     "assets/foto.png": b"\x89PNG\r\n\x1a\n",
 }
 
+DETECTABLE_FILES = {
+    "index.html": "<html><body><form></form></body></html>",
+    "script.js": """
+const BASE = `/api/public/tarjetas/${location.pathname.split('/')[2]}`;
+fetch(`${BASE}/config`).then(r => r.json()).then(cfg => cfg.menu_options);
+fetch(`${BASE}/respuestas`, {
+  method: 'POST',
+  body: JSON.stringify({ kind: 'rsvp', nombre: 'Ana', asisten: true })
+});
+fetch(`${BASE}/respuestas`, {
+  method: 'POST',
+  body: JSON.stringify({ kind: 'cancion', nombre: 'Ana', cancion: 'La Bamba' })
+});
+fetch(`${BASE}/fotos`, { method: 'POST', body: new FormData() });
+""",
+}
+
 
 @pytest.fixture
 def deploy_dir(tmp_path, monkeypatch):
@@ -243,6 +260,72 @@ def test_legacy_card_without_features_keeps_old_sections(client, admin_token, de
 def test_upload_with_empty_features_disables_all(client, admin_token, deploy_dir):
     body = upload(client, admin_token, slug="ninguna", features="").json()
     assert body["features"] == []
+
+
+def test_detect_features_from_zip(client, admin_token, deploy_dir):
+    buf = make_zip(DETECTABLE_FILES)
+    resp = client.post(
+        "/api/admin/deployed-cards/detect-features",
+        files={"file": ("detectable.zip", buf, "application/zip")},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["features"] == ["rsvp", "menu", "canciones", "album"]
+    assert body["sources"]["rsvp"] == ["script.js"]
+    assert body["sources"]["album"] == ["script.js"]
+    assert "mensajes" not in body["features"]
+
+
+def test_detect_features_finds_messages_and_ignores_static_cards(client, admin_token, deploy_dir):
+    files = {
+        **DETECTABLE_FILES,
+        "script.js": DETECTABLE_FILES["script.js"]
+        + "\nfetch(`${BASE}/respuestas`, { body: JSON.stringify({ kind: 'mensaje', nombre: 'Ana' }) });",
+    }
+    buf = make_zip(files)
+    resp = client.post(
+        "/api/admin/deployed-cards/detect-features",
+        files={"file": ("all.zip", buf, "application/zip")},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["features"] == ["rsvp", "menu", "canciones", "mensajes", "album"]
+
+    buf = make_zip(BASIC_FILES)
+    resp = client.post(
+        "/api/admin/deployed-cards/detect-features",
+        files={"file": ("static.zip", buf, "application/zip")},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["features"] == []
+
+
+def test_detect_features_requires_admin(client, deploy_dir):
+    token = register_and_verify(client, "detect-cli@test.com")
+    buf = make_zip(DETECTABLE_FILES)
+    resp = client.post(
+        "/api/admin/deployed-cards/detect-features",
+        files={"file": ("detectable.zip", buf, "application/zip")},
+        headers=auth_headers(token),
+    )
+    assert resp.status_code == 403
+
+
+def test_redeploy_updates_features(client, admin_token, deploy_dir):
+    card_id = upload(client, admin_token, slug="redetecta", features="rsvp").json()["id"]
+    buf = make_zip(DETECTABLE_FILES)
+    resp = client.post(
+        f"/api/admin/deployed-cards/{card_id}/redeploy",
+        files={"file": ("nuevo.zip", buf, "application/zip")},
+        data={"features": "album,mensajes"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["features"] == ["album", "mensajes"]
+    cfg = client.get("/api/public/tarjetas/redetecta/config").json()
+    assert cfg["features"] == ["album", "mensajes"]
 
 
 def test_admin_updates_features_and_unknown_are_ignored(client, admin_token, deploy_dir):
