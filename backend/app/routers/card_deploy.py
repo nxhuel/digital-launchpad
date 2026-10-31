@@ -7,9 +7,8 @@ disponible en /tarjetas-digitales/<slug> sin tocar código ni redeployar.
 ABM completo: alta (upload), listado, edición de título, renombre del slug
 (cambia la URL), re-subida del ZIP y baja (borra DB + carpeta del disco).
 """
-import io
 import csv
-import json
+import io
 import logging
 import mimetypes
 import os
@@ -20,6 +19,7 @@ import time
 import unicodedata
 import zipfile
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import cloudinary
@@ -28,6 +28,9 @@ import cloudinary.utils
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from PIL import Image
 from sqlalchemy.orm import Session
 
@@ -647,13 +650,7 @@ def _submission_notification_text(
             action = "avisó que no asiste"
         else:
             action = "respondió la invitación"
-        companions = payload.get("acompañantes")
-        count = len(companions) if isinstance(companions, list) else 0
-        try:
-            count = max(count, int(payload.get("cantidad") or 0))
-        except (TypeError, ValueError):
-            pass
-        people = count + 1
+        people = _rsvp_people_count(payload)
         suffix = f" por {people} personas" if people > 1 else ""
         return "Nueva confirmación", f"{nombre} {action}{suffix} en '{card_title}'"
 
@@ -751,15 +748,104 @@ def _list_submissions(db: Session, card_id: int, kind: Optional[str] = None) -> 
 
 COMPANION_PAYLOAD_KEYS = ("acompañantes", "acompanantes", "subinvitados")
 
+# Las primeras tarjetas guardaban el detalle de los acompañantes dentro de
+# `mensaje` con este formato. Se reconstruye para que el Excel muestre las
+# mismas personas que el panel.
+LEGACY_COMPANION_LINE = re.compile(
+    r"^\s*Invitado\s+\d+\s*:\s*(.*?)\s*[—–-]\s*(S[ií],?\s*asiste|No\s+asiste)\s*$",
+    re.IGNORECASE,
+)
 
-def _csv_value(value: Any) -> Any:
-    """Convierte listas/dicts a JSON legible para una celda de Excel."""
-    if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False)
-    return value
+EXPORT_KIND_LABELS = {
+    "rsvp": "Confirmación",
+    "cancion": "Canción",
+    "menu": "Menú",
+    "mensaje": "Mensaje",
+    "otro": "Otro",
+}
+
+EXPORT_FIELD_LABELS = {
+    "menu": "Menú",
+    "notas": "Notas",
+    "cancion": "Canción",
+    "canción": "Canción",
+    "tema": "Canción",
+    "musica": "Canción",
+    "música": "Canción",
+    "mensaje": "Mensaje",
+    "dedicatoria": "Deseo",
+    "deseo": "Deseo",
+    "deseos": "Deseo",
+    "texto": "Mensaje",
+    "restriccion": "Restricción alimentaria",
+    "restricción": "Restricción alimentaria",
+    "restricciones": "Restricción alimentaria",
+    "alimentacion": "Restricción alimentaria",
+    "alimentación": "Restricción alimentaria",
+    "telefono": "Teléfono",
+    "teléfono": "Teléfono",
+}
+
+# Columnas que se estilan distinto en el Excel.
+EXPORT_STATUS_LABELS = {True: "Asiste", False: "No asiste", None: "Sin responder"}
+
+
+def _bool_or_none(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "si", "sí", "asiste"}:
+            return True
+        if normalized in {"false", "0", "no", "no asiste"}:
+            return False
+    return None
+
+
+def _status_label(value: Optional[bool]) -> str:
+    return EXPORT_STATUS_LABELS[value]
+
+
+def _kind_label(kind: str) -> str:
+    return EXPORT_KIND_LABELS.get(str(kind).lower(), str(kind).capitalize() or "Respuesta")
+
+
+def _strip_legacy_companion_lines(value: Any) -> str:
+    """Quita del mensaje las líneas que en realidad son el detalle de acompañantes."""
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line for line in text.split("\n") if not LEGACY_COMPANION_LINE.match(line)]
+    return "\n".join(lines).strip()
+
+
+def _legacy_companions_from_message(value: Any) -> List[Dict[str, Any]]:
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    companions: List[Dict[str, Any]] = []
+    for line in text.split("\n"):
+        match = LEGACY_COMPANION_LINE.match(line)
+        if not match:
+            continue
+        companions.append(
+            {
+                "nombre": match.group(1).strip() or f"Acompañante {len(companions) + 1}",
+                "asisten": bool(re.match(r"^s[ií],?\s*asiste$", match.group(2).strip(), re.IGNORECASE)),
+            }
+        )
+        if len(companions) >= 20:
+            break
+    return companions
+
+
+def _has_companion_list(payload: Dict[str, Any]) -> bool:
+    return any(isinstance(payload.get(key), list) for key in COMPANION_PAYLOAD_KEYS)
 
 
 def _row_companions(payload: Any) -> List[Dict[str, Any]]:
+    """Acompañantes declarados, incluyendo el formato viejo dentro de `mensaje`."""
     if not isinstance(payload, dict):
         return []
     for key in COMPANION_PAYLOAD_KEYS:
@@ -772,59 +858,362 @@ def _row_companions(payload: Any) -> List[Dict[str, Any]]:
                 elif isinstance(item, (str, int, float)):
                     companions.append({"nombre": str(item)})
             return companions
-    return []
+    return _legacy_companions_from_message(payload.get("mensaje"))
 
 
-def _submissions_csv(slug: str, rows: List[CardSubmission]) -> StreamingResponse:
-    keys: List[str] = []
-    max_companions = 0
-    for r in rows:
-        payload = r.payload if isinstance(r.payload, dict) else {}
-        for k in payload.keys():
-            if k in COMPANION_PAYLOAD_KEYS:
+def _row_people(payload: Any) -> List[Dict[str, Any]]:
+    """Personas del grupo (sin el principal) para el resumen y el Excel.
+
+    Si la tarjeta vieja solo mandaba `cantidad`, ese valor era el total de
+    asistentes (principal incluido): se crean acompañantes sintéticos para no
+    inflar ni perder personas.
+    """
+    if not isinstance(payload, dict):
+        return []
+    companions = _row_companions(payload)
+    asisten = _bool_or_none(payload.get("asisten"))
+    if _has_companion_list(payload) or companions:
+        return companions
+
+    try:
+        total = int(payload.get("cantidad") or 0)
+    except (TypeError, ValueError):
+        total = 0
+    synthetic = min(20, max(0, total - 1)) if asisten is True else 0
+    for index in range(synthetic):
+        companions.append(
+            {
+                "nombre": f"Acompañante {len(companions) + 1}",
+                "asisten": asisten,
+            }
+        )
+    return companions
+
+
+def _rsvp_people_count(payload: Dict[str, Any]) -> int:
+    """Cantidad de personas del grupo para las notificaciones.
+
+    Con lista de acompañantes (nueva o vieja) se cuenta el principal + la lista.
+    Sin lista, `cantidad` era el total de asistentes en las tarjetas viejas.
+    """
+    companions = _row_companions(payload)
+    if _has_companion_list(payload) or companions:
+        return 1 + len(companions)
+    try:
+        total = int(payload.get("cantidad") or 0)
+    except (TypeError, ValueError):
+        total = 0
+    return max(1, total)
+
+
+def _guest_name(payload: Dict[str, Any]) -> str:
+    name = str(payload.get("nombre") or "").strip()
+    return name or "Sin nombre"
+
+
+def _companion_text(companion: Dict[str, Any], keys: Tuple[str, ...]) -> str:
+    for key in keys:
+        value = companion.get(key)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def _companion_name(companion: Dict[str, Any], index: int) -> str:
+    name = str(companion.get("nombre") or "").strip()
+    return name or f"Acompañante {index + 1}"
+
+
+def _payload_export_fields(payload: Dict[str, Any], kind: str) -> Dict[str, str]:
+    """Campos visibles del payload, con las mismas etiquetas que el panel."""
+    fields: Dict[str, str] = {}
+    for key, value in payload.items():
+        if key in COMPANION_PAYLOAD_KEYS or key in {"nombre", "asisten", "cantidad"}:
+            continue
+        if isinstance(value, (dict, list)) or value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+        # En un RSVP, `mensaje` puede traer la lista vieja de acompañantes.
+        if kind == "rsvp" and key in {"mensaje", "dedicatoria", "deseo", "deseos", "texto"}:
+            text = _strip_legacy_companion_lines(text)
+            if not text:
                 continue
-            if k not in keys:
-                keys.append(k)
-        if r.kind == "rsvp":
-            max_companions = max(max_companions, len(_row_companions(payload)))
+        label = EXPORT_FIELD_LABELS.get(key)
+        if not label:
+            label = key.replace("_", " ").strip()
+            if label:
+                label = label[0].upper() + label[1:]
+        if not label:
+            continue
+        if label in fields:
+            if text not in fields[label].split(" · "):
+                fields[label] = f"{fields[label]} · {text}"
+        else:
+            fields[label] = text
+    return fields
 
-    companion_columns: List[str] = []
-    for idx in range(1, max_companions + 1):
-        companion_columns.extend(
+
+def _export_summary(rows: List[CardSubmission]) -> str:
+    groups = 0
+    attending = 0
+    declined = 0
+    pending = 0
+    for row in rows:
+        if row.kind != "rsvp":
+            continue
+        groups += 1
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        states = [_bool_or_none(payload.get("asisten"))]
+        states.extend(_bool_or_none(companion.get("asisten")) for companion in _row_people(payload))
+        for state in states:
+            if state is True:
+                attending += 1
+            elif state is False:
+                declined += 1
+            else:
+                pending += 1
+
+    if groups:
+        parts = [
+            f"{groups} {'confirmación' if groups == 1 else 'confirmaciones'}",
+            f"{attending} asisten",
+            f"{declined} no asisten",
+        ]
+        if pending:
+            parts.append(f"{pending} sin responder")
+        return " · ".join(parts)
+    count = len(rows)
+    return f"{count} {'respuesta' if count == 1 else 'respuestas'}"
+
+
+def _as_naive_utc(value: Any) -> Any:
+    if not isinstance(value, datetime):
+        return value
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _build_export_table(
+    rows: List[CardSubmission],
+) -> Tuple[List[str], List[List[Any]], str]:
+    """Arma las columnas del Excel/CSV con el mismo criterio que el panel."""
+    prepared: List[Tuple[CardSubmission, Dict[str, Any], Dict[str, str], List[Dict[str, Any]]]] = []
+    field_order: List[str] = []
+    max_companions = 0
+
+    for row in rows:
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        fields = _payload_export_fields(payload, row.kind)
+        for label in fields:
+            if label not in field_order:
+                field_order.append(label)
+        companions = _row_people(payload)
+        max_companions = max(max_companions, len(companions))
+        prepared.append((row, payload, fields, companions))
+
+    companion_headers: List[str] = []
+    for index in range(1, max_companions + 1):
+        companion_headers.extend(
             [
-                f"acompañante_{idx}_nombre",
-                f"acompañante_{idx}_asisten",
-                f"acompañante_{idx}_menu",
-                f"acompañante_{idx}_notas",
+                f"Acompañante {index} · Nombre",
+                f"Acompañante {index} · Estado",
+                f"Acompañante {index} · Menú",
+                f"Acompañante {index} · Notas",
             ]
         )
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["id", "tipo", "fecha"] + keys + companion_columns)
-    for r in rows:
-        payload = r.payload if isinstance(r.payload, dict) else {}
-        created = r.created_at.isoformat(sep=" ") if r.created_at else ""
-        base = [r.id, r.kind, created] + [_csv_value(payload.get(k, "")) for k in keys]
-        companions = _row_companions(payload)
-        extra: List[Any] = []
-        for idx in range(max_companions):
-            companion = companions[idx] if idx < len(companions) else {}
-            extra.extend(
+    headers = ["Tipo", "Invitado", "Estado"] + field_order + companion_headers + ["Fecha"]
+    data: List[List[Any]] = []
+    for row, payload, fields, companions in prepared:
+        main_state = _bool_or_none(payload.get("asisten"))
+        values: List[Any] = [
+            _kind_label(row.kind),
+            _guest_name(payload),
+            _status_label(main_state) if row.kind == "rsvp" or "asisten" in payload else "",
+        ]
+        values.extend(fields.get(label, "") for label in field_order)
+
+        for index in range(max_companions):
+            companion = companions[index] if index < len(companions) else {}
+            values.extend(
                 [
-                    _csv_value(companion.get("nombre", "")),
-                    _csv_value(companion.get("asisten", "")),
-                    _csv_value(companion.get("menu", "")),
-                    _csv_value(companion.get("notas", "")),
+                    _companion_name(companion, index) if companion else "",
+                    _status_label(_bool_or_none(companion.get("asisten"))) if companion else "",
+                    _companion_text(companion, ("menu",)) if companion else "",
+                    _companion_text(companion, ("notas", "nota", "detalle")) if companion else "",
                 ]
             )
-        writer.writerow(base + extra)
-    output.seek(0)
-    data = output.getvalue()
+
+        values.append(_as_naive_utc(row.created_at) if row.created_at else "")
+        data.append(values)
+
+    return headers, data, _export_summary(rows)
+
+
+def _csv_cell(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y %H:%M")
+    return value
+
+
+def _submissions_csv(slug: str, rows: List[CardSubmission]) -> StreamingResponse:
+    headers, data, _ = _build_export_table(rows)
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\r\n")
+    writer.writerow(headers)
+    for row in data:
+        writer.writerow([_csv_cell(value) for value in row])
+    payload = "\ufeff" + output.getvalue()
     return StreamingResponse(
-        iter([data]),
+        iter([payload]),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="respuestas-{slug}.csv"'},
+    )
+
+
+def _submissions_xlsx(card: DeployedCard, rows: List[CardSubmission]) -> StreamingResponse:
+    """Excel con el mismo aspecto del panel: título, resumen, estados y tabla."""
+    headers, data, summary = _build_export_table(rows)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Respuestas"
+    sheet.sheet_view.showGridLines = False
+
+    last_col = len(headers)
+    last_letter = get_column_letter(last_col)
+    header_row = 3
+
+    # Título y resumen, como el encabezado del panel.
+    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
+    title_cell = sheet.cell(row=1, column=1, value=f"Respuestas · {card.title}")
+    title_cell.font = Font(bold=True, size=16, color="FFFFFF")
+    title_cell.fill = PatternFill("solid", fgColor="6D28D9")
+    title_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    sheet.row_dimensions[1].height = 30
+
+    sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=last_col)
+    summary_cell = sheet.cell(row=2, column=1, value=summary)
+    summary_cell.font = Font(size=10, color="5B21B6")
+    summary_cell.fill = PatternFill("solid", fgColor="F5F3FF")
+    summary_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    sheet.row_dimensions[2].height = 22
+
+    for column, header in enumerate(headers, start=1):
+        cell = sheet.cell(row=header_row, column=column, value=header)
+        cell.font = Font(bold=True, color="FFFFFF", size=10)
+        cell.fill = PatternFill("solid", fgColor="7C3AED")
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = Border(bottom=Side(style="thin", color="6D28D9"))
+    sheet.row_dimensions[header_row].height = 28
+
+    thin = Side(style="thin", color="E2E8F0")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    status_styles = {
+        "Asiste": ("D1FAE5", "047857"),
+        "No asiste": ("F1F5F9", "475569"),
+        "Sin responder": ("FEF3C7", "B45309"),
+    }
+
+    if not data:
+        sheet.merge_cells(
+            start_row=header_row + 1,
+            start_column=1,
+            end_row=header_row + 1,
+            end_column=last_col,
+        )
+        empty_cell = sheet.cell(
+            row=header_row + 1,
+            column=1,
+            value="Todavía no hay respuestas para esta tarjeta.",
+        )
+        empty_cell.font = Font(italic=True, size=10, color="94A3B8")
+        empty_cell.alignment = Alignment(horizontal="center", vertical="center")
+        sheet.row_dimensions[header_row + 1].height = 32
+
+    for row_index, values in enumerate(data, start=header_row + 1):
+        for column_index, value in enumerate(values, start=1):
+            cell = sheet.cell(row=row_index, column=column_index, value=value)
+            cell.border = border
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            header = headers[column_index - 1]
+
+            if header == "Tipo":
+                cell.font = Font(bold=True, size=9, color="6D28D9")
+                cell.fill = PatternFill("solid", fgColor="F5F3FF")
+                cell.alignment = Alignment(horizontal="center", vertical="top")
+            elif header == "Estado" or header.endswith("· Estado"):
+                fill, color = status_styles.get(str(value), ("FFFFFF", "475569"))
+                cell.fill = PatternFill("solid", fgColor=fill)
+                cell.font = Font(bold=True, size=9, color=color)
+                cell.alignment = Alignment(horizontal="center", vertical="top")
+            elif header == "Fecha":
+                cell.font = Font(size=9, color="64748B")
+                cell.alignment = Alignment(horizontal="right", vertical="top")
+                if isinstance(value, datetime):
+                    cell.number_format = "dd/mm/yyyy hh:mm"
+            else:
+                cell.font = Font(size=10, color="334155")
+                if row_index % 2 == 0:
+                    cell.fill = PatternFill("solid", fgColor="FAFAFA")
+
+    widths = {
+        "Tipo": 15,
+        "Invitado": 26,
+        "Estado": 14,
+        "Menú": 18,
+        "Notas": 36,
+        "Canción": 26,
+        "Mensaje": 36,
+        "Fecha": 18,
+    }
+    column_widths: List[float] = []
+    for column, header in enumerate(headers, start=1):
+        if header in widths:
+            width = widths[header]
+        elif header.endswith("· Nombre"):
+            width = 24
+        elif header.endswith("· Estado"):
+            width = 12
+        elif header.endswith("· Menú"):
+            width = 16
+        elif header.endswith("· Notas"):
+            width = 28
+        else:
+            width = 22
+        column_widths.append(width)
+        sheet.column_dimensions[get_column_letter(column)].width = width
+
+    # Altura aproximada para que las notas largas se lean completas al abrir.
+    for row_index, values in enumerate(data, start=header_row + 1):
+        max_lines = 1
+        for column_index, value in enumerate(values):
+            text = str(value or "")
+            chars_per_line = max(8, int(column_widths[column_index] * 1.05))
+            lines = sum(
+                max(1, (len(part) + chars_per_line - 1) // chars_per_line)
+                for part in text.split("\n")
+            )
+            max_lines = max(max_lines, lines)
+        sheet.row_dimensions[row_index].height = min(120, max(24, max_lines * 14 + 6))
+
+    if data:
+        last_row = header_row + len(data)
+        sheet.auto_filter.ref = f"A{header_row}:{last_letter}{last_row}"
+    sheet.freeze_panes = f"A{header_row + 1}"
+    sheet.page_setup.orientation = "landscape"
+    sheet.page_setup.fitToWidth = 1
+    sheet.sheet_properties.pageSetUpPr.fitToPage = True
+
+    output = io.BytesIO()
+    workbook.save(output)
+    payload = output.getvalue()
+    return StreamingResponse(
+        iter([payload]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="respuestas-{card.slug}.xlsx"'},
     )
 
 
@@ -848,6 +1237,17 @@ def export_responses_csv(
 ):
     card = _get_or_404(db, card_id)
     return _submissions_csv(card.slug, _list_submissions(db, card_id, kind))
+
+
+@router.get("/{card_id}/respuestas.xlsx")
+def export_responses_xlsx(
+    card_id: int,
+    kind: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    card = _get_or_404(db, card_id)
+    return _submissions_xlsx(card, _list_submissions(db, card_id, kind))
 
 
 @router.delete("/{card_id}/respuestas/{sub_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -978,6 +1378,17 @@ def my_card_responses_csv(
 ):
     card = _get_owned_card(db, current_user, card_id)
     return _submissions_csv(card.slug, _list_submissions(db, card_id, kind))
+
+
+@my_router.get("/{card_id}/respuestas.xlsx")
+def my_card_responses_xlsx(
+    card_id: int,
+    kind: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    card = _get_owned_card(db, current_user, card_id)
+    return _submissions_xlsx(card, _list_submissions(db, card_id, kind))
 
 
 @my_router.patch("/{card_id}/config", response_model=DeployedCardDetailOut)

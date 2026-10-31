@@ -142,8 +142,8 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
   const download = async () => {
     try {
       await downloadCsv(
-        `/my-cards/${card.id}/respuestas.csv?kind=rsvp`,
-        `invitados-${card.slug}.csv`
+        `/my-cards/${card.id}/respuestas.xlsx?kind=rsvp`,
+        `invitados-${card.slug}.xlsx`
       )
     } catch {
       toast.error('No se pudo descargar el Excel')
@@ -284,7 +284,9 @@ function TarjetaCard({ card }: { card: DeployedCardItem }) {
                 <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                   {rsvp.attending} {rsvp.attending === 1 ? 'persona asiste' : 'personas asisten'}
                 </span>
-
+                <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  {rsvp.declined} {rsvp.declined === 1 ? 'persona no asiste' : 'personas no asisten'}
+                </span>
               </div>
               <button
                 onClick={download}

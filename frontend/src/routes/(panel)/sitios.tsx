@@ -805,8 +805,8 @@ function RespuestasModal({
   const download = async () => {
     try {
       await downloadCsv(
-        `${base}/${item.id}/respuestas.csv${kind ? `?kind=${kind}` : ''}`,
-        `respuestas-${item.slug}.csv`
+        `${base}/${item.id}/respuestas.xlsx${kind ? `?kind=${kind}` : ''}`,
+        `respuestas-${item.slug}.xlsx`
       )
     } catch {
       toast.error('No se pudo descargar el Excel')

@@ -211,6 +211,43 @@ def test_export_csv(client, admin_token, deploy_dir):
     assert "Canción" in only.text
 
 
+def test_export_xlsx_uses_panel_layout(client, admin_token, deploy_dir):
+    from openpyxl import load_workbook
+
+    card_id = upload(client, admin_token, slug="boda").json()["id"]
+    _submit(client, "boda", {
+        "kind": "rsvp",
+        "nombre": "Juan Pérez",
+        "asisten": True,
+        "menu": "Normal",
+        "acompañantes": [
+            {"nombre": "Ana Pérez", "asisten": True, "menu": "Veggie"},
+            {"nombre": "Luis Pérez", "asisten": False},
+        ],
+    })
+    headers = auth_headers(admin_token)
+    resp = client.get(
+        f"/api/admin/deployed-cards/{card_id}/respuestas.xlsx", headers=headers
+    )
+    assert resp.status_code == 200
+    assert "spreadsheetml" in resp.headers["content-type"]
+    assert "respuestas-boda.xlsx" in resp.headers["content-disposition"]
+
+    workbook = load_workbook(io.BytesIO(resp.content))
+    sheet = workbook.active
+    header = [cell.value for cell in sheet[3]]
+    assert "Invitado" in header
+    assert "Estado" in header
+    assert "Acompañante 1 · Nombre" in header
+    assert "Acompañante 1 · Estado" in header
+
+    first_row = [cell.value for cell in sheet[4]]
+    assert "Juan Pérez" in first_row
+    assert "Asiste" in first_row
+    assert "Ana Pérez" in first_row
+    assert "No asiste" in first_row
+
+
 def test_delete_response(client, admin_token, deploy_dir):
     card_id = upload(client, admin_token, slug="boda").json()["id"]
     sub_id = _submit(client, "boda", {"kind": "rsvp", "nombre": "Borrar"}).json()["id"]
